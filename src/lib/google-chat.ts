@@ -15,25 +15,24 @@ export async function sendWebhookMessage(webhookUrl: string, message: ChatMessag
   return res.json()
 }
 
-// Create a visitor notification card
+// Create a visitor notification card (no buttons - webhook doesn't support interactive)
 export function createVisitorNotificationCard(params: {
   visitorName: string
   visitorCompany?: string
   purpose: string
   employeeName: string
-  meetingRoom?: string
-  scheduledAt?: string
   appointmentId: string
 }) {
+  const time = new Date().toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Tokyo' })
+
   return {
+    text: `🏢 来訪通知: ${params.visitorName}様がお越しです`,
     cardsV2: [{
       cardId: `visitor-${params.appointmentId}`,
       card: {
         header: {
           title: '🏢 来訪者のお知らせ',
           subtitle: `${params.visitorName}様${params.visitorCompany ? ` (${params.visitorCompany})` : ''} がお越しです`,
-          imageUrl: 'https://fonts.gstatic.com/s/i/short-term/release/googlesymbols/person/default/48px.svg',
-          imageType: 'CIRCLE',
         },
         sections: [
           {
@@ -59,53 +58,14 @@ export function createVisitorNotificationCard(params: {
                   startIcon: { knownIcon: 'MEMBERSHIP' },
                 },
               },
-              ...(params.meetingRoom ? [{
+              {
                 decoratedText: {
-                  topLabel: '会議室',
-                  text: params.meetingRoom,
-                  startIcon: { knownIcon: 'HOTEL_CLASS' },
-                },
-              }] : []),
-              ...(params.scheduledAt ? [{
-                decoratedText: {
-                  topLabel: '予定時刻',
-                  text: params.scheduledAt,
+                  topLabel: '受付時刻',
+                  text: time,
                   startIcon: { knownIcon: 'CLOCK' },
                 },
-              }] : []),
-            ],
-          },
-          {
-            widgets: [{
-              buttonList: {
-                buttons: [
-                  {
-                    text: '✅ 向かいます',
-                    onClick: {
-                      action: {
-                        function: 'respond',
-                        parameters: [
-                          { key: 'appointmentId', value: params.appointmentId },
-                          { key: 'response', value: 'on_my_way' },
-                        ],
-                      },
-                    },
-                  },
-                  {
-                    text: '⏳ 少々お待ちください',
-                    onClick: {
-                      action: {
-                        function: 'respond',
-                        parameters: [
-                          { key: 'appointmentId', value: params.appointmentId },
-                          { key: 'response', value: 'please_wait' },
-                        ],
-                      },
-                    },
-                  },
-                ],
               },
-            }],
+            ],
           },
         ],
       },
