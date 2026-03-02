@@ -1,151 +1,119 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import {
   Users,
   Check,
   Clock,
   CheckCircle2,
-  Plus,
-  TrendingUp,
   ChevronRight,
+  RefreshCw,
 } from 'lucide-react';
 
-// Mock data
-const mockStats = [
-  { label: '本日の来訪予定数', value: 12, icon: Users, color: 'bg-blue-50', iconColor: 'text-blue-600' },
-  { label: 'チェックイン済み', value: 8, icon: Check, color: 'bg-green-50', iconColor: 'text-green-600' },
-  { label: '待機中', value: 3, icon: Clock, color: 'bg-amber-50', iconColor: 'text-amber-600' },
-  { label: '完了', value: 1, icon: CheckCircle2, color: 'bg-gray-50', iconColor: 'text-gray-600' },
-];
-
-const mockUpcomingVisitors = [
-  {
-    id: 1,
-    name: '山田 太郎',
-    company: 'ABC株式会社',
-    checkInTime: '09:30',
-    host: '佐藤 花子',
-    room: '会議室A',
-    status: 'confirmed',
-  },
-  {
-    id: 2,
-    name: '鈴木 美咲',
-    company: 'XYZ株式会社',
-    checkInTime: '10:00',
-    host: '渡辺 次郎',
-    room: '会議室B',
-    status: 'confirmed',
-  },
-  {
-    id: 3,
-    name: '高橋 健太',
-    company: 'DEF株式会社',
-    checkInTime: '11:00',
-    host: '佐藤 花子',
-    room: '会議室A',
-    status: 'confirmed',
-  },
-  {
-    id: 4,
-    name: '伊藤 由美',
-    company: 'GHI株式会社',
-    checkInTime: '14:00',
-    host: '田中 次郎',
-    room: '会議室C',
-    status: 'confirmed',
-  },
-  {
-    id: 5,
-    name: '佐々木 拓也',
-    company: 'JKL株式会社',
-    checkInTime: '15:30',
-    host: '渡辺 次郎',
-    room: '会議室B',
-    status: 'confirmed',
-  },
-];
-
-const mockActivityFeed = [
-  {
-    id: 1,
-    type: 'checkin',
-    visitor: '山田 太郎',
-    company: 'ABC株式会社',
-    time: '09:25',
-    description: 'チェックイン完了',
-  },
-  {
-    id: 2,
-    type: 'booking',
-    visitor: '鈴木 美咲',
-    company: 'XYZ株式会社',
-    time: '08:15',
-    description: '来訪予約が作成されました',
-  },
-  {
-    id: 3,
-    type: 'notification',
-    visitor: '高橋 健太',
-    company: 'DEF株式会社',
-    time: '07:45',
-    description: '担当者に通知を送信',
-  },
-  {
-    id: 4,
-    type: 'checkout',
-    visitor: '伊藤 由美',
-    company: 'GHI株式会社',
-    time: '昨日 16:30',
-    description: 'チェックアウト完了',
-  },
-];
-
-function getActivityIcon(type: string) {
-  switch (type) {
-    case 'checkin':
-      return <Check className="w-4 h-4 text-green-600" />;
-    case 'booking':
-      return <Plus className="w-4 h-4 text-blue-600" />;
-    case 'notification':
-      return <TrendingUp className="w-4 h-4 text-amber-600" />;
-    case 'checkout':
-      return <CheckCircle2 className="w-4 h-4 text-gray-600" />;
-    default:
-      return null;
-  }
+interface Stats {
+  todayCount: number;
+  weekCount: number;
+  totalCount: number;
+  checkedInCount: number;
+  notifiedCount: number;
+  completedCount: number;
 }
 
-export default function DashboardPage() {
-  const [quickActionLoading, setQuickActionLoading] = useState<string | null>(
-    null
-  );
+interface RecentVisit {
+  id: string;
+  visitorName: string;
+  visitorCompany: string | null;
+  purpose: string;
+  status: string;
+  createdAt: string;
+  employee: { name: string; department: string } | null;
+}
 
-  const handleQuickAction = (action: string) => {
-    setQuickActionLoading(action);
-    setTimeout(() => setQuickActionLoading(null), 1000);
+const purposeLabels: Record<string, string> = {
+  meeting: '打ち合わせ',
+  interview: '面接',
+  delivery: '配達',
+  other: 'その他',
+};
+
+const statusLabels: Record<string, string> = {
+  CHECKED_IN: 'チェックイン済み',
+  NOTIFIED: '通知済み',
+  COMPLETED: '完了',
+};
+
+export default function DashboardPage() {
+  const [stats, setStats] = useState<Stats | null>(null);
+  const [recentVisits, setRecentVisits] = useState<RecentVisit[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const fetchData = async () => {
+    try {
+      const res = await fetch('/api/admin/stats');
+      const data = await res.json();
+      if (data.success) {
+        setStats(data.stats);
+        setRecentVisits(data.recentVisits || []);
+      }
+    } catch (e) {
+      console.error('Failed to fetch stats:', e);
+    } finally {
+      setLoading(false);
+    }
   };
+
+  useEffect(() => {
+    fetchData();
+    const interval = setInterval(fetchData, 30000); // 30秒ごとに更新
+    return () => clearInterval(interval);
+  }, []);
+
+  const statCards = stats
+    ? [
+        { label: '本日の来訪数', value: stats.todayCount, icon: Users, color: 'bg-blue-50', iconColor: 'text-blue-600' },
+        { label: 'チェックイン中', value: stats.checkedInCount + stats.notifiedCount, icon: Clock, color: 'bg-amber-50', iconColor: 'text-amber-600' },
+        { label: '完了', value: stats.completedCount, icon: CheckCircle2, color: 'bg-green-50', iconColor: 'text-green-600' },
+        { label: '今週の来訪数', value: stats.weekCount, icon: Check, color: 'bg-gray-50', iconColor: 'text-gray-600' },
+      ]
+    : [];
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <RefreshCw className="w-8 h-8 text-blue-600 animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8">
       {/* Page Header */}
-      <div>
-        <h1 className="text-3xl font-bold text-gray-900">ダッシュボード</h1>
-        <p className="mt-2 text-gray-600">
-          今日は
-          {new Date().toLocaleDateString('ja-JP', {
-            month: 'long',
-            day: 'numeric',
-            weekday: 'long',
-          })}
-          です
-        </p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">ダッシュボード</h1>
+          <p className="mt-2 text-gray-600">
+            今日は
+            {new Date().toLocaleDateString('ja-JP', {
+              month: 'long',
+              day: 'numeric',
+              weekday: 'long',
+            })}
+            です
+          </p>
+        </div>
+        <button
+          onClick={() => { setLoading(true); fetchData(); }}
+          className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors"
+        >
+          <RefreshCw size={18} />
+          更新
+        </button>
       </div>
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {mockStats.map((stat) => {
+        {statCards.map((stat) => {
           const Icon = stat.icon;
           return (
             <div
@@ -172,116 +140,105 @@ export default function DashboardPage() {
       <div>
         <h2 className="text-lg font-bold text-gray-900 mb-4">クイックアクション</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <button
-            onClick={() => handleQuickAction('new-appointment')}
-            disabled={quickActionLoading === 'new-appointment'}
-            className="flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-medium py-3 px-6 rounded-lg transition-colors"
+          <Link
+            href="/admin/employees"
+            className="flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-6 rounded-lg transition-colors"
           >
-            <Plus size={20} />
-            新規来訪予約
-          </button>
-          <button
-            onClick={() => handleQuickAction('add-employee')}
-            disabled={quickActionLoading === 'add-employee'}
-            className="flex items-center justify-center gap-2 bg-gray-600 hover:bg-gray-700 disabled:bg-gray-400 text-white font-medium py-3 px-6 rounded-lg transition-colors"
+            社員管理
+          </Link>
+          <Link
+            href="/admin/visitors"
+            className="flex items-center justify-center gap-2 bg-gray-600 hover:bg-gray-700 text-white font-medium py-3 px-6 rounded-lg transition-colors"
           >
-            <Plus size={20} />
-            社員追加
-          </button>
+            来訪履歴
+          </Link>
         </div>
       </div>
 
-      {/* Main Content Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Upcoming Visitors */}
-        <div className="lg:col-span-2">
-          <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-            <div className="px-6 py-4 border-b border-gray-200">
-              <h2 className="text-lg font-bold text-gray-900">
-                次の来訪予定 (5件)
-              </h2>
-            </div>
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="bg-gray-50 border-b border-gray-200">
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">
-                      時刻
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">
-                      来訪者
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">
-                      会社名
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">
-                      担当者
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">
-                      会議室
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-200">
-                  {mockUpcomingVisitors.map((visitor) => (
-                    <tr key={visitor.id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 text-sm font-medium text-gray-900">
-                        {visitor.checkInTime}
-                      </td>
-                      <td className="px-6 py-4 text-sm text-gray-900">
-                        {visitor.name}
-                      </td>
-                      <td className="px-6 py-4 text-sm text-gray-600">
-                        {visitor.company}
-                      </td>
-                      <td className="px-6 py-4 text-sm text-gray-600">
-                        {visitor.host}
-                      </td>
-                      <td className="px-6 py-4 text-sm text-gray-600">
-                        {visitor.room}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
+      {/* Recent Visits */}
+      <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+        <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+          <h2 className="text-lg font-bold text-gray-900">
+            最近の来訪 ({recentVisits.length}件)
+          </h2>
+          <Link
+            href="/admin/visitors"
+            className="flex items-center text-sm font-medium text-blue-600 hover:text-blue-700"
+          >
+            すべて見る
+            <ChevronRight size={16} className="ml-1" />
+          </Link>
         </div>
-
-        {/* Activity Feed */}
-        <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-          <div className="px-6 py-4 border-b border-gray-200">
-            <h2 className="text-lg font-bold text-gray-900">最近のアクティビティ</h2>
-          </div>
-          <div className="divide-y divide-gray-200">
-            {mockActivityFeed.map((activity) => (
-              <div key={activity.id} className="px-6 py-4 hover:bg-gray-50">
-                <div className="flex items-start gap-4">
-                  <div className="mt-1">{getActivityIcon(activity.type)}</div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-gray-900">
-                      {activity.visitor}
-                    </p>
-                    <p className="text-xs text-gray-500 mt-1">
-                      {activity.company}
-                    </p>
-                    <p className="text-xs text-gray-600 mt-1">
-                      {activity.description}
-                    </p>
-                  </div>
-                  <p className="text-xs text-gray-500 whitespace-nowrap ml-2">
-                    {activity.time}
-                  </p>
-                </div>
-              </div>
-            ))}
-          </div>
-          <div className="px-6 py-3 bg-gray-50 border-t border-gray-200">
-            <button className="flex items-center justify-center w-full text-sm font-medium text-blue-600 hover:text-blue-700">
-              もっと見る
-              <ChevronRight size={16} className="ml-1" />
-            </button>
-          </div>
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead>
+              <tr className="bg-gray-50 border-b border-gray-200">
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">
+                  日時
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">
+                  来訪者
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">
+                  会社名
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">
+                  担当者
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">
+                  用件
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">
+                  ステータス
+                </th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-200">
+              {recentVisits.length > 0 ? (
+                recentVisits.map((visit) => (
+                  <tr key={visit.id} className="hover:bg-gray-50">
+                    <td className="px-6 py-4 text-sm font-medium text-gray-900">
+                      {new Date(visit.createdAt).toLocaleString('ja-JP', {
+                        month: '2-digit',
+                        day: '2-digit',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      })}
+                    </td>
+                    <td className="px-6 py-4 text-sm text-gray-900">
+                      {visit.visitorName}
+                    </td>
+                    <td className="px-6 py-4 text-sm text-gray-600">
+                      {visit.visitorCompany || '-'}
+                    </td>
+                    <td className="px-6 py-4 text-sm text-gray-600">
+                      {visit.employee?.name || '-'}
+                    </td>
+                    <td className="px-6 py-4 text-sm text-gray-600">
+                      {purposeLabels[visit.purpose] || visit.purpose}
+                    </td>
+                    <td className="px-6 py-4 text-sm">
+                      <span className={`px-3 py-1 text-xs font-medium rounded-full ${
+                        visit.status === 'COMPLETED'
+                          ? 'text-green-700 bg-green-100'
+                          : visit.status === 'NOTIFIED'
+                          ? 'text-blue-700 bg-blue-100'
+                          : 'text-amber-700 bg-amber-100'
+                      }`}>
+                        {statusLabels[visit.status] || visit.status}
+                      </span>
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan={6} className="px-6 py-8 text-center text-gray-500">
+                    来訪記録がまだありません
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
         </div>
       </div>
     </div>

@@ -1,32 +1,11 @@
-import NextAuth from 'next-auth'
-import GoogleProvider from 'next-auth/providers/google'
-import { PrismaAdapter } from '@auth/prisma-adapter'
-import prisma from '@/lib/prisma'
+import { NextResponse } from 'next/server'
 
-const handler = NextAuth({
-  adapter: PrismaAdapter(prisma) as any,
-  providers: [
-    GoogleProvider({
-      clientId: process.env.GOOGLE_CLIENT_ID!,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
-    }),
-  ],
-  session: { strategy: 'jwt' },
-  pages: { signIn: '/auth/signin' },
-  callbacks: {
-    async jwt({ token, user }) {
-      if (user) {
-        token.id = user.id
-      }
-      return token
-    },
-    async session({ session, token }) {
-      if (session.user) {
-        (session.user as any).id = token.id as string
-      }
-      return session
-    },
-  },
-})
+// Admin authentication is simplified - no OAuth needed for reception system
+// This endpoint exists to prevent 404 errors
+export async function GET() {
+  return NextResponse.json({ message: 'Auth not required for reception' })
+}
 
-export { handler as GET, handler as POST }
+export async function POST() {
+  return NextResponse.json({ message: 'Auth not required for reception' })
+}

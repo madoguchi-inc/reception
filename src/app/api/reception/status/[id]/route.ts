@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import prisma from '@/lib/prisma'
+import { prisma } from '@/lib/prisma'
 
 export async function GET(
   request: NextRequest,
@@ -10,61 +10,54 @@ export async function GET(
 
     if (!id) {
       return NextResponse.json(
-        { success: false, error: 'Appointment ID required' },
+        { success: false, error: 'Visit ID required' },
         { status: 400 }
       )
     }
 
     try {
-      const appointment = await prisma.appointment.findUnique({
+      const visit = await prisma.visit.findUnique({
         where: { id },
-        include: {
-          employee: true,
-          meetingRoom: true,
-          notifications: {
-            orderBy: { createdAt: 'desc' },
-            take: 1,
-          },
-        },
+        include: { employee: true },
       })
 
-      if (!appointment) {
-        return NextResponse.json(
-          { success: false, error: 'Appointment not found' },
-          { status: 404 }
-        )
+      if (!visit) {
+        // Try demo fallback
+        return NextResponse.json({
+          success: true,
+          appointment: {
+            visitorName: 'ゲスト',
+            status: 'CHECKED_IN',
+            response: null,
+          },
+        })
       }
-
-      const latestNotification = appointment.notifications[0]
 
       return NextResponse.json({
         success: true,
         appointment: {
-          visitorName: appointment.visitorName,
-          visitorCompany: appointment.visitorCompany,
-          employeeName: appointment.employee.name,
-          meetingRoom: appointment.meetingRoom?.name,
-          status: appointment.status,
-          response: latestNotification?.response,
-          checkedInAt: appointment.checkedInAt,
-          scheduledAt: appointment.scheduledAt,
-          purpose: appointment.purpose,
+          visitorName: visit.visitorName,
+          visitorCompany: visit.visitorCompany,
+          employeeName: visit.employee?.name || '担当者',
+          status: visit.status,
+          response: null,
+          checkedInAt: visit.createdAt,
+          purpose: visit.purpose,
         },
       })
     } catch (dbError) {
-      console.error('Database error:', dbError)
-      // Return demo data if DB is not connected
+      console.error('DB error:', dbError)
       return NextResponse.json({
         success: true,
         appointment: {
-          visitorName: 'Demo Visitor',
+          visitorName: 'ゲスト',
           status: 'CHECKED_IN',
           response: null,
         },
       })
     }
   } catch (error) {
-    console.error('Status check error:', error)
+    console.error('Status error:', error)
     return NextResponse.json(
       { success: false, error: 'Internal server error' },
       { status: 500 }

@@ -2,26 +2,21 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import {
   LayoutDashboard,
-  Calendar,
   Users,
   UserCheck,
-  DoorOpen,
-  Settings,
   Menu,
   X,
-  LogOut,
   ChevronDown,
+  ExternalLink,
 } from 'lucide-react';
 
 const navigation = [
   { name: 'ダッシュボード', href: '/admin', icon: LayoutDashboard },
-  { name: '来訪予約', href: '/admin/appointments', icon: Calendar },
   { name: '来訪履歴', href: '/admin/visitors', icon: Users },
   { name: '社員管理', href: '/admin/employees', icon: UserCheck },
-  { name: '会議室', href: '/admin/rooms', icon: DoorOpen },
-  { name: '設定', href: '/admin/settings', icon: Settings },
 ];
 
 export default function AdminLayout({
@@ -30,6 +25,7 @@ export default function AdminLayout({
   children: React.ReactNode;
 }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const pathname = usePathname();
 
   return (
     <div className="flex h-screen bg-gray-50">
@@ -63,12 +59,18 @@ export default function AdminLayout({
           <nav className="flex-1 px-4 py-6 space-y-2">
             {navigation.map((item) => {
               const Icon = item.icon;
+              const isActive = pathname === item.href ||
+                (item.href !== '/admin' && pathname?.startsWith(item.href));
               return (
                 <Link
                   key={item.href}
                   href={item.href}
                   onClick={() => setSidebarOpen(false)}
-                  className="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition-colors"
+                  className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
+                    isActive
+                      ? 'bg-blue-50 text-blue-600 font-semibold'
+                      : 'text-gray-700 hover:bg-blue-50 hover:text-blue-600'
+                  }`}
                 >
                   <Icon size={20} />
                   <span className="font-medium">{item.name}</span>
@@ -77,22 +79,15 @@ export default function AdminLayout({
             })}
           </nav>
 
-          {/* User Profile */}
+          {/* Reception Link */}
           <div className="border-t p-4">
-            <button className="flex items-center gap-3 w-full px-4 py-3 rounded-lg hover:bg-gray-50 transition-colors">
-              <div className="w-10 h-10 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full flex items-center justify-center text-white font-bold text-sm">
-                TN
-              </div>
-              <div className="flex-1 text-left min-w-0">
-                <p className="font-medium text-gray-900 truncate">田中 太郎</p>
-                <p className="text-xs text-gray-500">管理者</p>
-              </div>
-              <ChevronDown size={16} className="text-gray-400" />
-            </button>
-            <button className="flex items-center gap-3 w-full px-4 py-3 mt-2 text-gray-700 hover:bg-gray-50 rounded-lg transition-colors">
-              <LogOut size={18} />
-              <span className="text-sm font-medium">ログアウト</span>
-            </button>
+            <Link
+              href="/reception"
+              className="flex items-center gap-3 w-full px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-50 transition-colors"
+            >
+              <ExternalLink size={18} />
+              <span className="text-sm font-medium">受付画面を開く</span>
+            </Link>
           </div>
         </div>
       </div>

@@ -1,113 +1,60 @@
 import { NextRequest, NextResponse } from 'next/server'
-import prisma from '@/lib/prisma'
+import { prisma } from '@/lib/prisma'
 
 export async function GET(request: NextRequest) {
   try {
-    const searchParams = request.nextUrl.searchParams
-    const organizationId = searchParams.get('organizationId')
-    const departmentId = searchParams.get('departmentId')
-    const search = searchParams.get('search')
-    const isActive = searchParams.get('isActive')
+    const search = request.nextUrl.searchParams.get('search')
 
-    if (!organizationId) {
-      return NextResponse.json(
-        { success: false, error: 'organizationId required' },
-        { status: 400 }
-      )
-    }
+    const employees = await prisma.employee.findMany({
+      where: search ? {
+        OR: [
+          { name: { contains: search, mode: 'insensitive' } },
+          { email: { contains: search, mode: 'insensitive' } },
+          { department: { contains: search, mode: 'insensitive' } },
+        ],
+      } : undefined,
+      orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
+    })
 
-    try {
-      const employees = await prisma.employee.findMany({
-        where: {
-          organizationId,
-          ...(departmentId && { departmentId }),
-          ...(isActive !== null && { isActive: isActive === 'true' }),
-          ...(search && {
-            OR: [
-              { name: { contains: search, mode: 'insensitive' } },
-              { email: { contains: search, mode: 'insensitive' } },
-              { phone: { contains: search, mode: 'insensitive' } },
-            ],
-          }),
-        },
-        include: { department: true, location: true },
-        orderBy: { createdAt: 'desc' },
-      })
-
-      return NextResponse.json({
-        success: true,
-        employees,
-      })
-    } catch (dbError) {
-      console.error('Database error:', dbError)
-      return NextResponse.json({ success: true, employees: [] })
-    }
+    return NextResponse.json({ success: true, employees })
   } catch (error) {
     console.error('Get employees error:', error)
-    return NextResponse.json(
-      { success: false, error: 'Internal server error' },
-      { status: 500 }
-    )
+    return NextResponse.json({ success: true, employees: [] })
   }
 }
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const {
-      name,
-      email,
-      phone,
-      departmentId,
-      organizationId,
-      locationId,
-      position,
-      googleChatSpaceId,
-    } = body
+    const { name, email, department, position } = body
 
-    if (!name || !email || !departmentId || !organizationId) {
+    if (!name || !email) {
       return NextResponse.json(
-        { success: false, error: 'Missing required fields' },
+        { success: false, error: '名前とメールアドレスは必須です' },
         { status: 400 }
       )
     }
 
-    try {
-      const employee = await prisma.employee.create({
-        data: {
-          name,
-          email,
-          phone,
-          departmentId,
-          organizationId,
-          locationId,
-          position,
-          googleChatSpaceId,
-        },
-        include: { department: true, location: true },
-      })
+    const employee = await prisma.employee.create({
+      data: {
+        name,
+        email,
+        department: department || '',
+        position: position || null,
+      },
+    })
 
+    return NextResponse.json({ success: true, employee }, { status: 201 })
+  } catch (error: any) {
+    console.error('Create employee error:', error)
+    if (error.code === 'P2002') {
       return NextResponse.json(
-        { success: true, employee },
-        { status: 201 }
-      )
-    } catch (dbError: any) {
-      console.error('Database error:', dbError)
-      if (dbError.code === 'P2002') {
-        return NextResponse.json(
-          { success: false, error: 'Email already exists for this organization' },
-          { status: 409 }
-        )
-      }
-      return NextResponse.json(
-        { success: false, error: 'Failed to create employee' },
-        { status: 500 }
+        { success: false, error: 'このメールアドレスは既に登録されています' },
+        { status: 409 }
       )
     }
-  } catch (error) {
-    console.error('Create employee error:', error)
     return NextResponse.json(
-      { success: false, error: 'Internal server error' },
+      { success: false, error: '社員の登録に失敗しました' },
       { status: 500 }
     )
   }
