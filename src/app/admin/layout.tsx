@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
@@ -12,27 +12,35 @@ const navigation = [
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
   const pathname = usePathname();
+
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 768);
+    check();
+    window.addEventListener('resize', check);
+    return () => window.removeEventListener('resize', check);
+  }, []);
+
+  const sidebarStyle: React.CSSProperties = isMobile
+    ? {
+        position: 'fixed', top: 0, left: 0, bottom: 0, zIndex: 50,
+        width: '240px', minWidth: '240px',
+        background: 'linear-gradient(180deg, #0f172a 0%, #1e293b 100%)',
+        display: 'flex', flexDirection: 'column',
+        transition: 'transform 0.3s ease',
+        transform: sidebarOpen ? 'translateX(0)' : 'translateX(-100%)',
+      }
+    : {
+        width: '240px', minWidth: '240px',
+        background: 'linear-gradient(180deg, #0f172a 0%, #1e293b 100%)',
+        display: 'flex', flexDirection: 'column',
+      };
 
   return (
     <div style={{ display: 'flex', height: '100vh', background: '#f0f2f5', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif' }}>
       {/* Sidebar */}
-      <div
-        style={{
-          position: sidebarOpen ? 'fixed' : undefined,
-          inset: sidebarOpen ? '0' : undefined,
-          zIndex: sidebarOpen ? 50 : undefined,
-          width: '240px',
-          minWidth: '240px',
-          background: 'linear-gradient(180deg, #0f172a 0%, #1e293b 100%)',
-          display: 'flex',
-          flexDirection: 'column',
-          transition: 'transform 0.3s ease',
-          ...(typeof window !== 'undefined' && window.innerWidth < 768
-            ? { transform: sidebarOpen ? 'translateX(0)' : 'translateX(-100%)', position: 'fixed', top: 0, left: 0, bottom: 0, zIndex: 50 }
-            : {}),
-        }}
-      >
+      <div style={sidebarStyle}>
         {/* Logo */}
         <div style={{ padding: '24px 20px', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -112,15 +120,17 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           borderBottom: '1px solid #e5e7eb',
           boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
         }}>
-          <button
-            onClick={() => setSidebarOpen(!sidebarOpen)}
-            style={{
-              display: 'none', background: 'none', border: 'none', cursor: 'pointer',
-              fontSize: '24px', padding: '4px',
-            }}
-          >
-            ☰
-          </button>
+          {isMobile && (
+            <button
+              onClick={() => setSidebarOpen(!sidebarOpen)}
+              style={{
+                background: 'none', border: 'none', cursor: 'pointer',
+                fontSize: '24px', padding: '4px',
+              }}
+            >
+              ☰
+            </button>
+          )}
           <div style={{ flex: 1 }} />
           <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
             <div style={{
