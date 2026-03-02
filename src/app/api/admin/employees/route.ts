@@ -17,9 +17,9 @@ export async function GET(request: NextRequest) {
     })
 
     return NextResponse.json({ success: true, employees })
-  } catch (error) {
+  } catch (error: any) {
     console.error('Get employees error:', error)
-    return NextResponse.json({ success: true, employees: [] })
+    return NextResponse.json({ success: false, error: error.message || 'DB connection failed', employees: [] })
   }
 }
 
