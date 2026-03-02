@@ -2,14 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import {
-  Users,
-  Check,
-  Clock,
-  CheckCircle2,
-  ChevronRight,
-  RefreshCw,
-} from 'lucide-react';
 
 interface Stats {
   todayCount: number;
@@ -37,10 +29,10 @@ const purposeLabels: Record<string, string> = {
   other: 'その他',
 };
 
-const statusLabels: Record<string, string> = {
-  CHECKED_IN: 'チェックイン済み',
-  NOTIFIED: '通知済み',
-  COMPLETED: '完了',
+const statusConfig: Record<string, { label: string; bg: string; color: string }> = {
+  CHECKED_IN: { label: 'チェックイン済', bg: '#fef3c7', color: '#92400e' },
+  NOTIFIED: { label: '通知済み', bg: '#dbeafe', color: '#1e40af' },
+  COMPLETED: { label: '完了', bg: '#d1fae5', color: '#065f46' },
 };
 
 export default function DashboardPage() {
@@ -65,174 +57,198 @@ export default function DashboardPage() {
 
   useEffect(() => {
     fetchData();
-    const interval = setInterval(fetchData, 30000); // 30秒ごとに更新
+    const interval = setInterval(fetchData, 30000);
     return () => clearInterval(interval);
   }, []);
 
-  const statCards = stats
-    ? [
-        { label: '本日の来訪数', value: stats.todayCount, icon: Users, color: 'bg-blue-50', iconColor: 'text-blue-600' },
-        { label: 'チェックイン中', value: stats.checkedInCount + stats.notifiedCount, icon: Clock, color: 'bg-amber-50', iconColor: 'text-amber-600' },
-        { label: '完了', value: stats.completedCount, icon: CheckCircle2, color: 'bg-green-50', iconColor: 'text-green-600' },
-        { label: '今週の来訪数', value: stats.weekCount, icon: Check, color: 'bg-gray-50', iconColor: 'text-gray-600' },
-      ]
-    : [];
-
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <RefreshCw className="w-8 h-8 text-blue-600 animate-spin" />
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '300px' }}>
+        <div style={{
+          width: '40px', height: '40px', border: '3px solid #e5e7eb',
+          borderTop: '3px solid #3b82f6', borderRadius: '50%',
+          animation: 'spin 1s linear infinite',
+        }} />
+        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
       </div>
     );
   }
 
+  const statCards = stats ? [
+    { label: '本日の来訪', value: stats.todayCount, icon: '👋', gradient: 'linear-gradient(135deg, #3b82f6, #2563eb)', lightBg: '#eff6ff' },
+    { label: '対応中', value: stats.checkedInCount + stats.notifiedCount, icon: '⏳', gradient: 'linear-gradient(135deg, #f59e0b, #d97706)', lightBg: '#fffbeb' },
+    { label: '対応完了', value: stats.completedCount, icon: '✅', gradient: 'linear-gradient(135deg, #10b981, #059669)', lightBg: '#ecfdf5' },
+    { label: '今週の来訪', value: stats.weekCount, icon: '📅', gradient: 'linear-gradient(135deg, #8b5cf6, #7c3aed)', lightBg: '#f5f3ff' },
+  ] : [];
+
   return (
-    <div className="space-y-8">
-      {/* Page Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">ダッシュボード</h1>
-          <p className="mt-2 text-gray-600">
-            今日は
-            {new Date().toLocaleDateString('ja-JP', {
-              month: 'long',
-              day: 'numeric',
-              weekday: 'long',
-            })}
-            です
-          </p>
+    <div>
+      {/* Header */}
+      <div style={{ marginBottom: '32px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+          <h1 style={{ fontSize: '28px', fontWeight: '800', color: '#0f172a', margin: 0, letterSpacing: '-0.5px' }}>
+            ダッシュボード
+          </h1>
+          <button
+            onClick={() => { setLoading(true); fetchData(); }}
+            style={{
+              display: 'flex', alignItems: 'center', gap: '6px',
+              padding: '8px 16px', borderRadius: '10px', border: '1px solid #e2e8f0',
+              background: 'white', color: '#64748b', fontSize: '13px', fontWeight: '500',
+              cursor: 'pointer', transition: 'all 0.2s',
+            }}
+          >
+            🔄 更新
+          </button>
         </div>
-        <button
-          onClick={() => { setLoading(true); fetchData(); }}
-          className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors"
-        >
-          <RefreshCw size={18} />
-          更新
-        </button>
+        <p style={{ color: '#64748b', fontSize: '14px', margin: 0 }}>
+          {new Date().toLocaleDateString('ja-JP', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' })}
+        </p>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {statCards.map((stat) => {
-          const Icon = stat.icon;
-          return (
-            <div
-              key={stat.label}
-              className={`${stat.color} rounded-lg p-6 border border-gray-200`}
-            >
-              <div className="flex items-start justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600">
-                    {stat.label}
-                  </p>
-                  <p className="text-3xl font-bold text-gray-900 mt-2">
-                    {stat.value}
-                  </p>
-                </div>
-                <Icon className={`w-8 h-8 ${stat.iconColor}`} />
+      {/* Stat Cards */}
+      <div style={{
+        display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+        gap: '20px', marginBottom: '32px',
+      }}>
+        {statCards.map((card) => (
+          <div key={card.label} style={{
+            background: 'white', borderRadius: '16px', padding: '24px',
+            border: '1px solid #f1f5f9',
+            boxShadow: '0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.02)',
+            transition: 'transform 0.2s, box-shadow 0.2s',
+          }}>
+            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+              <div>
+                <p style={{ fontSize: '13px', fontWeight: '500', color: '#94a3b8', margin: '0 0 8px 0', letterSpacing: '0.3px' }}>
+                  {card.label}
+                </p>
+                <p style={{ fontSize: '36px', fontWeight: '800', color: '#0f172a', margin: 0, lineHeight: 1 }}>
+                  {card.value}
+                </p>
+              </div>
+              <div style={{
+                width: '48px', height: '48px', borderRadius: '14px',
+                background: card.lightBg,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: '24px',
+              }}>
+                {card.icon}
               </div>
             </div>
-          );
-        })}
+          </div>
+        ))}
       </div>
 
       {/* Quick Actions */}
-      <div>
-        <h2 className="text-lg font-bold text-gray-900 mb-4">クイックアクション</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <Link
-            href="/admin/employees"
-            className="flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-6 rounded-lg transition-colors"
-          >
-            社員管理
+      <div style={{ marginBottom: '32px' }}>
+        <h2 style={{ fontSize: '16px', fontWeight: '700', color: '#0f172a', margin: '0 0 16px 0' }}>
+          クイックアクション
+        </h2>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px' }}>
+          <Link href="/admin/employees" style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+            padding: '14px 24px', borderRadius: '12px',
+            background: 'linear-gradient(135deg, #3b82f6, #2563eb)',
+            color: 'white', fontWeight: '600', fontSize: '14px',
+            textDecoration: 'none', transition: 'all 0.2s',
+            boxShadow: '0 4px 12px rgba(59,130,246,0.3)',
+          }}>
+            🏢 社員管理
           </Link>
-          <Link
-            href="/admin/visitors"
-            className="flex items-center justify-center gap-2 bg-gray-600 hover:bg-gray-700 text-white font-medium py-3 px-6 rounded-lg transition-colors"
-          >
-            来訪履歴
+          <Link href="/admin/visitors" style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+            padding: '14px 24px', borderRadius: '12px',
+            background: 'linear-gradient(135deg, #64748b, #475569)',
+            color: 'white', fontWeight: '600', fontSize: '14px',
+            textDecoration: 'none', transition: 'all 0.2s',
+            boxShadow: '0 4px 12px rgba(100,116,139,0.3)',
+          }}>
+            👥 来訪履歴
+          </Link>
+          <Link href="/reception" style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+            padding: '14px 24px', borderRadius: '12px',
+            background: 'linear-gradient(135deg, #10b981, #059669)',
+            color: 'white', fontWeight: '600', fontSize: '14px',
+            textDecoration: 'none', transition: 'all 0.2s',
+            boxShadow: '0 4px 12px rgba(16,185,129,0.3)',
+          }}>
+            🖥 受付画面
           </Link>
         </div>
       </div>
 
       {/* Recent Visits */}
-      <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-        <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
-          <h2 className="text-lg font-bold text-gray-900">
-            最近の来訪 ({recentVisits.length}件)
+      <div style={{
+        background: 'white', borderRadius: '16px', border: '1px solid #f1f5f9',
+        boxShadow: '0 1px 3px rgba(0,0,0,0.04)', overflow: 'hidden',
+      }}>
+        <div style={{
+          padding: '20px 24px', borderBottom: '1px solid #f1f5f9',
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        }}>
+          <h2 style={{ fontSize: '16px', fontWeight: '700', color: '#0f172a', margin: 0 }}>
+            最近の来訪
           </h2>
-          <Link
-            href="/admin/visitors"
-            className="flex items-center text-sm font-medium text-blue-600 hover:text-blue-700"
-          >
-            すべて見る
-            <ChevronRight size={16} className="ml-1" />
+          <Link href="/admin/visitors" style={{
+            fontSize: '13px', fontWeight: '600', color: '#3b82f6',
+            textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '4px',
+          }}>
+            すべて見る →
           </Link>
         </div>
-        <div className="overflow-x-auto">
-          <table className="w-full">
+
+        <div style={{ overflowX: 'auto' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
-              <tr className="bg-gray-50 border-b border-gray-200">
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">
-                  日時
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">
-                  来訪者
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">
-                  会社名
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">
-                  担当者
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">
-                  用件
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">
-                  ステータス
-                </th>
+              <tr style={{ background: '#f8fafc' }}>
+                {['日時', '来訪者', '会社名', '担当者', '用件', 'ステータス'].map((h) => (
+                  <th key={h} style={{
+                    padding: '12px 24px', textAlign: 'left',
+                    fontSize: '11px', fontWeight: '600', color: '#94a3b8',
+                    textTransform: 'uppercase', letterSpacing: '0.5px',
+                    borderBottom: '1px solid #f1f5f9',
+                  }}>
+                    {h}
+                  </th>
+                ))}
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-200">
-              {recentVisits.length > 0 ? (
-                recentVisits.map((visit) => (
-                  <tr key={visit.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 text-sm font-medium text-gray-900">
-                      {new Date(visit.createdAt).toLocaleString('ja-JP', {
-                        month: '2-digit',
-                        day: '2-digit',
-                        hour: '2-digit',
-                        minute: '2-digit',
-                      })}
+            <tbody>
+              {recentVisits.length > 0 ? recentVisits.map((visit) => {
+                const sc = statusConfig[visit.status] || { label: visit.status, bg: '#f1f5f9', color: '#475569' };
+                return (
+                  <tr key={visit.id} style={{ borderBottom: '1px solid #f8fafc' }}>
+                    <td style={{ padding: '14px 24px', fontSize: '13px', fontWeight: '500', color: '#334155' }}>
+                      {new Date(visit.createdAt).toLocaleString('ja-JP', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })}
                     </td>
-                    <td className="px-6 py-4 text-sm text-gray-900">
+                    <td style={{ padding: '14px 24px', fontSize: '13px', fontWeight: '600', color: '#0f172a' }}>
                       {visit.visitorName}
                     </td>
-                    <td className="px-6 py-4 text-sm text-gray-600">
-                      {visit.visitorCompany || '-'}
+                    <td style={{ padding: '14px 24px', fontSize: '13px', color: '#64748b' }}>
+                      {visit.visitorCompany || '—'}
                     </td>
-                    <td className="px-6 py-4 text-sm text-gray-600">
-                      {visit.employee?.name || '-'}
+                    <td style={{ padding: '14px 24px', fontSize: '13px', color: '#64748b' }}>
+                      {visit.employee?.name || '—'}
                     </td>
-                    <td className="px-6 py-4 text-sm text-gray-600">
+                    <td style={{ padding: '14px 24px', fontSize: '13px', color: '#64748b' }}>
                       {purposeLabels[visit.purpose] || visit.purpose}
                     </td>
-                    <td className="px-6 py-4 text-sm">
-                      <span className={`px-3 py-1 text-xs font-medium rounded-full ${
-                        visit.status === 'COMPLETED'
-                          ? 'text-green-700 bg-green-100'
-                          : visit.status === 'NOTIFIED'
-                          ? 'text-blue-700 bg-blue-100'
-                          : 'text-amber-700 bg-amber-100'
-                      }`}>
-                        {statusLabels[visit.status] || visit.status}
+                    <td style={{ padding: '14px 24px' }}>
+                      <span style={{
+                        display: 'inline-block', padding: '4px 12px', borderRadius: '20px',
+                        fontSize: '11px', fontWeight: '600',
+                        background: sc.bg, color: sc.color,
+                      }}>
+                        {sc.label}
                       </span>
                     </td>
                   </tr>
-                ))
-              ) : (
+                );
+              }) : (
                 <tr>
-                  <td colSpan={6} className="px-6 py-8 text-center text-gray-500">
+                  <td colSpan={6} style={{ padding: '48px 24px', textAlign: 'center', color: '#94a3b8', fontSize: '14px' }}>
                     来訪記録がまだありません
                   </td>
                 </tr>

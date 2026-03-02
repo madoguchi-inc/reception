@@ -1,13 +1,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import {
-  Search,
-  Download,
-  ChevronLeft,
-  ChevronRight,
-  RefreshCw,
-} from 'lucide-react';
 
 interface Visit {
   id: string;
@@ -35,10 +28,10 @@ const purposeLabels: Record<string, string> = {
   other: 'その他',
 };
 
-const statusConfig: Record<string, { label: string; class: string }> = {
-  CHECKED_IN: { label: 'チェックイン', class: 'text-amber-700 bg-amber-100' },
-  NOTIFIED: { label: '通知済み', class: 'text-blue-700 bg-blue-100' },
-  COMPLETED: { label: '完了', class: 'text-green-700 bg-green-100' },
+const statusConfig: Record<string, { label: string; bg: string; color: string; icon: string }> = {
+  CHECKED_IN: { label: 'チェックイン', bg: '#fef3c7', color: '#92400e', icon: '🟡' },
+  NOTIFIED: { label: '通知済み', bg: '#dbeafe', color: '#1e40af', icon: '🔵' },
+  COMPLETED: { label: '完了', bg: '#d1fae5', color: '#065f46', icon: '🟢' },
 };
 
 export default function VisitorsPage() {
@@ -53,7 +46,6 @@ export default function VisitorsPage() {
     try {
       const params = new URLSearchParams({ page: page.toString(), limit: '20' });
       if (search) params.set('search', search);
-
       const res = await fetch(`/api/admin/visitors?${params}`);
       const data = await res.json();
       if (data.success) {
@@ -67,18 +59,10 @@ export default function VisitorsPage() {
     }
   };
 
-  useEffect(() => {
-    fetchVisits(currentPage, searchQuery);
-  }, [currentPage]);
+  useEffect(() => { fetchVisits(currentPage, searchQuery); }, [currentPage]);
 
-  const handleSearch = () => {
-    setCurrentPage(1);
-    fetchVisits(1, searchQuery);
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') handleSearch();
-  };
+  const handleSearch = () => { setCurrentPage(1); fetchVisits(1, searchQuery); };
+  const handleKeyDown = (e: React.KeyboardEvent) => { if (e.key === 'Enter') handleSearch(); };
 
   const handleExportCSV = () => {
     const headers = ['日時', '来訪者', '会社名', '担当者', '目的', 'ステータス'];
@@ -90,12 +74,10 @@ export default function VisitorsPage() {
       purposeLabels[v.purpose] || v.purpose,
       statusConfig[v.status]?.label || v.status,
     ]);
-
     const csv = '\uFEFF' + [
       headers.join(','),
       ...rows.map((row) => row.map((cell) => `"${cell}"`).join(',')),
     ].join('\n');
-
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
     link.href = URL.createObjectURL(blob);
@@ -106,45 +88,60 @@ export default function VisitorsPage() {
   };
 
   return (
-    <div className="space-y-6">
-      {/* Page Header */}
-      <div className="flex items-center justify-between">
+    <div>
+      {/* Header */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' }}>
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">来訪履歴</h1>
-          <p className="mt-1 text-gray-600">
+          <h1 style={{ fontSize: '28px', fontWeight: '800', color: '#0f172a', margin: '0 0 4px 0', letterSpacing: '-0.5px' }}>
+            来訪履歴
+          </h1>
+          <p style={{ color: '#64748b', fontSize: '14px', margin: 0 }}>
             合計 {pagination.total} 件の来訪記録
           </p>
         </div>
         <button
           onClick={handleExportCSV}
           disabled={visits.length === 0}
-          className="flex items-center gap-2 bg-gray-600 hover:bg-gray-700 disabled:bg-gray-400 text-white font-medium py-2 px-4 rounded-lg transition-colors"
+          style={{
+            display: 'flex', alignItems: 'center', gap: '6px',
+            padding: '10px 20px', borderRadius: '12px', border: 'none',
+            background: visits.length === 0 ? '#cbd5e1' : 'linear-gradient(135deg, #64748b, #475569)',
+            color: 'white', fontSize: '14px', fontWeight: '600',
+            cursor: visits.length === 0 ? 'default' : 'pointer',
+            boxShadow: visits.length > 0 ? '0 4px 12px rgba(100,116,139,0.3)' : 'none',
+          }}
         >
-          <Download size={20} />
-          CSVエクスポート
+          📥 CSVエクスポート
         </button>
       </div>
 
       {/* Search */}
-      <div className="bg-white rounded-lg border border-gray-200 p-4">
-        <div className="flex gap-4">
-          <div className="flex-1 relative">
-            <Search
-              size={18}
-              className="absolute left-3 top-3 text-gray-400"
-            />
-            <input
-              type="text"
-              placeholder="来訪者名または会社名で検索..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              onKeyDown={handleKeyDown}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            />
-          </div>
+      <div style={{
+        background: 'white', borderRadius: '14px', padding: '16px',
+        border: '1px solid #f1f5f9', marginBottom: '20px',
+        boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
+      }}>
+        <div style={{ display: 'flex', gap: '12px' }}>
+          <input
+            type="text"
+            placeholder="🔍 来訪者名または会社名で検索..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            onKeyDown={handleKeyDown}
+            style={{
+              flex: 1, padding: '10px 16px', borderRadius: '10px',
+              border: '1px solid #e2e8f0', fontSize: '13px', outline: 'none',
+              boxSizing: 'border-box',
+            }}
+          />
           <button
             onClick={handleSearch}
-            className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors"
+            style={{
+              padding: '10px 24px', borderRadius: '10px', border: 'none',
+              background: 'linear-gradient(135deg, #3b82f6, #2563eb)',
+              color: 'white', fontSize: '13px', fontWeight: '600',
+              cursor: 'pointer', boxShadow: '0 4px 12px rgba(59,130,246,0.3)',
+            }}
           >
             検索
           </button>
@@ -153,73 +150,83 @@ export default function VisitorsPage() {
 
       {/* Table */}
       {loading ? (
-        <div className="flex items-center justify-center h-32">
-          <RefreshCw className="w-8 h-8 text-blue-600 animate-spin" />
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '200px' }}>
+          <div style={{
+            width: '40px', height: '40px', border: '3px solid #e5e7eb',
+            borderTop: '3px solid #3b82f6', borderRadius: '50%',
+            animation: 'spin 1s linear infinite',
+          }} />
+          <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
         </div>
       ) : (
-        <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full">
+        <div style={{
+          background: 'white', borderRadius: '16px', border: '1px solid #f1f5f9',
+          boxShadow: '0 1px 3px rgba(0,0,0,0.04)', overflow: 'hidden',
+        }}>
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
               <thead>
-                <tr className="bg-gray-50 border-b border-gray-200">
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">
-                    日時
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">
-                    来訪者
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">
-                    会社名
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">
-                    担当者
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">
-                    用件
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">
-                    ステータス
-                  </th>
+                <tr style={{ background: '#f8fafc' }}>
+                  {['日時', '来訪者', '会社名', '担当者', '用件', 'ステータス'].map((h) => (
+                    <th key={h} style={{
+                      padding: '12px 24px', textAlign: 'left',
+                      fontSize: '11px', fontWeight: '600', color: '#94a3b8',
+                      textTransform: 'uppercase', letterSpacing: '0.5px',
+                      borderBottom: '1px solid #f1f5f9',
+                    }}>
+                      {h}
+                    </th>
+                  ))}
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-200">
-                {visits.length > 0 ? (
-                  visits.map((visit) => (
-                    <tr key={visit.id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 text-sm font-medium text-gray-900">
+              <tbody>
+                {visits.length > 0 ? visits.map((visit) => {
+                  const sc = statusConfig[visit.status] || { label: visit.status, bg: '#f1f5f9', color: '#475569', icon: '⚪' };
+                  return (
+                    <tr key={visit.id} style={{ borderBottom: '1px solid #f8fafc' }}>
+                      <td style={{ padding: '14px 24px', fontSize: '13px', fontWeight: '500', color: '#334155' }}>
                         {new Date(visit.createdAt).toLocaleString('ja-JP', {
-                          year: 'numeric',
-                          month: '2-digit',
-                          day: '2-digit',
-                          hour: '2-digit',
-                          minute: '2-digit',
+                          year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit',
                         })}
                       </td>
-                      <td className="px-6 py-4 text-sm text-gray-900">
-                        {visit.visitorName}
+                      <td style={{ padding: '14px 24px' }}>
+                        <div style={{ fontSize: '13px', fontWeight: '600', color: '#0f172a' }}>
+                          {visit.visitorName}
+                        </div>
                       </td>
-                      <td className="px-6 py-4 text-sm text-gray-600">
-                        {visit.visitorCompany || '-'}
+                      <td style={{ padding: '14px 24px', fontSize: '13px', color: '#64748b' }}>
+                        {visit.visitorCompany || '—'}
                       </td>
-                      <td className="px-6 py-4 text-sm text-gray-600">
-                        {visit.employee?.name || '-'}
+                      <td style={{ padding: '14px 24px' }}>
+                        {visit.employee ? (
+                          <div>
+                            <div style={{ fontSize: '13px', fontWeight: '500', color: '#334155' }}>{visit.employee.name}</div>
+                            <div style={{ fontSize: '11px', color: '#94a3b8' }}>{visit.employee.department}</div>
+                          </div>
+                        ) : (
+                          <span style={{ color: '#cbd5e1', fontSize: '13px' }}>—</span>
+                        )}
                       </td>
-                      <td className="px-6 py-4 text-sm text-gray-600">
+                      <td style={{ padding: '14px 24px', fontSize: '13px', color: '#64748b' }}>
                         {purposeLabels[visit.purpose] || visit.purpose}
                       </td>
-                      <td className="px-6 py-4 text-sm">
-                        <span className={`px-3 py-1 text-xs font-medium rounded-full ${
-                          statusConfig[visit.status]?.class || 'text-gray-700 bg-gray-100'
-                        }`}>
-                          {statusConfig[visit.status]?.label || visit.status}
+                      <td style={{ padding: '14px 24px' }}>
+                        <span style={{
+                          display: 'inline-flex', alignItems: 'center', gap: '4px',
+                          padding: '4px 12px', borderRadius: '20px',
+                          fontSize: '11px', fontWeight: '600',
+                          background: sc.bg, color: sc.color,
+                        }}>
+                          {sc.icon} {sc.label}
                         </span>
                       </td>
                     </tr>
-                  ))
-                ) : (
+                  );
+                }) : (
                   <tr>
-                    <td colSpan={6} className="px-6 py-8 text-center text-gray-500">
-                      来訪記録が見つかりません
+                    <td colSpan={6} style={{ padding: '60px 24px', textAlign: 'center' }}>
+                      <div style={{ fontSize: '48px', marginBottom: '12px' }}>📭</div>
+                      <p style={{ color: '#94a3b8', fontSize: '14px', fontWeight: '500', margin: 0 }}>来訪記録が見つかりません</p>
                     </td>
                   </tr>
                 )}
@@ -231,30 +238,44 @@ export default function VisitorsPage() {
 
       {/* Pagination */}
       {pagination.totalPages > 1 && (
-        <div className="flex items-center justify-between">
-          <p className="text-sm text-gray-600">
-            {(currentPage - 1) * pagination.limit + 1} -{' '}
-            {Math.min(currentPage * pagination.limit, pagination.total)} / {pagination.total}件
+        <div style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          marginTop: '20px', padding: '0 4px',
+        }}>
+          <p style={{ fontSize: '13px', color: '#64748b', margin: 0 }}>
+            {(currentPage - 1) * pagination.limit + 1} - {Math.min(currentPage * pagination.limit, pagination.total)} / {pagination.total}件
           </p>
-          <div className="flex gap-2">
+          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
             <button
               onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
               disabled={currentPage === 1}
-              className="flex items-center gap-1 px-3 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              style={{
+                padding: '8px 16px', borderRadius: '10px',
+                border: '1px solid #e2e8f0', background: 'white',
+                color: currentPage === 1 ? '#cbd5e1' : '#334155',
+                fontSize: '13px', fontWeight: '500', cursor: currentPage === 1 ? 'default' : 'pointer',
+              }}
             >
-              <ChevronLeft size={18} />
-              前へ
+              ← 前へ
             </button>
-            <span className="flex items-center px-3 py-2 text-sm text-gray-600">
+            <span style={{
+              padding: '8px 14px', borderRadius: '10px', background: '#f1f5f9',
+              fontSize: '13px', fontWeight: '600', color: '#334155',
+            }}>
               {currentPage} / {pagination.totalPages}
             </span>
             <button
               onClick={() => setCurrentPage(Math.min(pagination.totalPages, currentPage + 1))}
               disabled={currentPage === pagination.totalPages}
-              className="flex items-center gap-1 px-3 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              style={{
+                padding: '8px 16px', borderRadius: '10px',
+                border: '1px solid #e2e8f0', background: 'white',
+                color: currentPage === pagination.totalPages ? '#cbd5e1' : '#334155',
+                fontSize: '13px', fontWeight: '500',
+                cursor: currentPage === pagination.totalPages ? 'default' : 'pointer',
+              }}
             >
-              次へ
-              <ChevronRight size={18} />
+              次へ →
             </button>
           </div>
         </div>
