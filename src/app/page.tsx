@@ -80,6 +80,17 @@ export default function Home() {
         />
 
         {/* Welcome text */}
+        <h1
+          style={{
+            fontSize: '36px',
+            fontWeight: '700',
+            color: 'white',
+            margin: '0 0 8px',
+            textShadow: '0 2px 12px rgba(0,0,0,0.3)',
+          }}
+        >
+          ようこそ
+        </h1>
         <p
           style={{
             fontSize: '20px',
@@ -155,7 +166,7 @@ export default function Home() {
           letterSpacing: '1px',
         }}
       >
-        Powered by まどぐち株式会社
+        madoguchi株式会社
       </p>
     </div>
   );
