@@ -1,7 +1,6 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { ArrowLeft, ChevronRight, Search, CheckCircle2 } from 'lucide-react'
 
 interface Employee {
   id: string
@@ -25,6 +24,30 @@ const CARRIERS = [
 
 type StepType = 1 | 2 | 3 | 4 | 'delivery_complete'
 
+// Glassmorphism card style
+const glassCard: React.CSSProperties = {
+  background: 'rgba(255,255,255,0.12)',
+  backdropFilter: 'blur(20px)',
+  WebkitBackdropFilter: 'blur(20px)',
+  borderRadius: '24px',
+  border: '1px solid rgba(255,255,255,0.18)',
+  padding: '40px',
+  boxShadow: '0 8px 32px rgba(0,0,0,0.2)',
+}
+
+const inputStyle: React.CSSProperties = {
+  width: '100%',
+  padding: '14px 20px',
+  fontSize: '16px',
+  border: '1px solid rgba(255,255,255,0.25)',
+  borderRadius: '14px',
+  outline: 'none',
+  background: 'rgba(255,255,255,0.1)',
+  color: 'white',
+  boxSizing: 'border-box',
+  transition: 'border-color 0.2s',
+}
+
 export default function CheckInPage() {
   const router = useRouter()
   const [currentStep, setCurrentStep] = useState<StepType>(1)
@@ -42,19 +65,15 @@ export default function CheckInPage() {
 
   const isDeliveryFlow = purpose === 'delivery'
 
-  // Fetch employees from API
   useEffect(() => {
     fetch('/api/reception/employees')
       .then(res => res.json())
       .then(data => {
-        if (data.success && data.employees) {
-          setEmployees(data.employees)
-        }
+        if (data.success && data.employees) setEmployees(data.employees)
       })
       .catch(err => console.error('Failed to fetch employees:', err))
   }, [])
 
-  // Auto-return after delivery
   useEffect(() => {
     if (deliveryDone) {
       const timer = setTimeout(() => router.push('/reception'), 5000)
@@ -99,52 +118,31 @@ export default function CheckInPage() {
   }
 
   const handleDeliverySubmit = async () => {
-    setLoading(true)
-    setError(null)
+    setLoading(true); setError(null)
     try {
       const res = await fetch('/api/reception/delivery', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ carrier: selectedCarrier }),
       })
       const data = await res.json()
-      if (data.success) {
-        setDeliveryDone(true)
-      } else {
-        setError(data.error || '受付に失敗しました')
-      }
-    } catch {
-      setError('通信エラーが発生しました')
-    } finally {
-      setLoading(false)
-    }
+      if (data.success) setDeliveryDone(true)
+      else setError(data.error || '受付に失敗しました')
+    } catch { setError('通信エラーが発生しました') }
+    finally { setLoading(false) }
   }
 
   const handleSubmit = async () => {
-    setLoading(true)
-    setError(null)
+    setLoading(true); setError(null)
     try {
       const res = await fetch('/api/reception/checkin', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          visitorName,
-          visitorCompany,
-          purpose,
-          employeeId: selectedEmployee?.id,
-        }),
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ visitorName, visitorCompany, purpose, employeeId: selectedEmployee?.id }),
       })
       const data = await res.json()
-      if (data.success) {
-        router.push(`/reception/waiting/${data.appointmentId}`)
-      } else {
-        setError(data.error || '受付に失敗しました')
-      }
-    } catch {
-      setError('通信エラーが発生しました')
-    } finally {
-      setLoading(false)
-    }
+      if (data.success) router.push(`/reception/waiting/${data.appointmentId}`)
+      else setError(data.error || '受付に失敗しました')
+    } catch { setError('通信エラーが発生しました') }
+    finally { setLoading(false) }
   }
 
   const getPurposeLabel = (id: string | null) => PURPOSES.find(p => p.id === id)?.label || ''
@@ -154,25 +152,34 @@ export default function CheckInPage() {
     return typeof currentStep === 'number' ? currentStep : 1
   }
 
-  // Delivery completion
+  // Delivery complete screen
   if (deliveryDone) {
     const carrierLabel = CARRIERS.find(c => c.id === selectedCarrier)?.label || ''
     return (
-      <div className="w-full max-w-2xl mx-auto">
-        <div className="bg-white rounded-3xl p-10 shadow-lg border border-slate-100">
-          <div className="space-y-6 text-center">
-            <div className="flex justify-center mb-4">
-              <CheckCircle2 className="w-24 h-24 text-green-500" />
-            </div>
-            <h2 className="text-4xl font-bold text-green-600 mb-2">受付完了</h2>
-            <p className="text-slate-600 text-lg">配達受け付けが完了しました</p>
-            <div className="bg-slate-50 rounded-2xl p-8">
-              <div className="flex justify-between items-center py-3">
-                <span className="text-slate-600 font-medium">配送業者</span>
-                <span className="text-lg font-bold text-slate-800">{carrierLabel}</span>
+      <div style={{ width: '100%', maxWidth: '560px', margin: '0 auto' }}>
+        <div style={glassCard}>
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ fontSize: '72px', marginBottom: '16px' }}>✅</div>
+            <h2 style={{ fontSize: '32px', fontWeight: '700', color: '#4ade80', margin: '0 0 8px' }}>
+              受付完了
+            </h2>
+            <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '16px', margin: '0 0 32px' }}>
+              配達受け付けが完了しました
+            </p>
+            <div style={{
+              background: 'rgba(255,255,255,0.08)',
+              borderRadius: '16px',
+              padding: '20px 24px',
+              marginBottom: '24px',
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ color: 'rgba(255,255,255,0.6)', fontWeight: '500' }}>配送業者</span>
+                <span style={{ color: 'white', fontSize: '18px', fontWeight: '700' }}>{carrierLabel}</span>
               </div>
             </div>
-            <p className="text-slate-500 text-sm">5秒後に自動的にトップページに戻ります...</p>
+            <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '13px' }}>
+              5秒後に自動的にトップページに戻ります...
+            </p>
           </div>
         </div>
       </div>
@@ -180,203 +187,271 @@ export default function CheckInPage() {
   }
 
   return (
-    <div className="w-full max-w-2xl mx-auto">
-      <button onClick={handleBack} disabled={loading}
-        className="flex items-center gap-2 text-slate-400 hover:text-slate-600 transition-colors mb-8 disabled:opacity-50">
-        <ArrowLeft className="w-5 h-5" /><span>戻る</span>
+    <div style={{ width: '100%', maxWidth: '620px', margin: '0 auto' }}>
+      {/* Back button */}
+      <button
+        onClick={handleBack}
+        disabled={loading}
+        style={{
+          display: 'flex', alignItems: 'center', gap: '8px',
+          background: 'none', border: 'none', cursor: 'pointer',
+          color: 'rgba(255,255,255,0.5)', fontSize: '14px', fontWeight: '500',
+          marginBottom: '24px', padding: '4px 0',
+          opacity: loading ? 0.5 : 1,
+        }}
+      >
+        ← 戻る
       </button>
 
       {/* Step indicator */}
-      <div className="flex justify-between items-center mb-8 px-4">
+      <div style={{
+        display: 'flex', justifyContent: 'center', alignItems: 'center',
+        gap: '8px', marginBottom: '24px',
+      }}>
         {Array.from({ length: getStepCount() }).map((_, index) => {
           const step = index + 1
           const displayStep = getDisplayStep()
+          const isActive = step === displayStep
+          const isDone = step < displayStep
           return (
-            <div key={step} className="flex items-center">
-              <div className={`w-12 h-12 rounded-full flex items-center justify-center font-bold text-lg transition-all ${
-                step === displayStep ? 'bg-blue-600 text-white shadow-lg scale-110'
-                  : step < displayStep ? 'bg-green-500 text-white'
-                  : 'bg-slate-200 text-slate-400'
-              }`}>
-                {step < displayStep ? '✓' : step}
+            <div key={step} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <div style={{
+                width: '40px', height: '40px', borderRadius: '50%',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontWeight: '700', fontSize: '15px',
+                background: isActive ? 'white' : isDone ? 'rgba(74,222,128,0.3)' : 'rgba(255,255,255,0.1)',
+                color: isActive ? '#0f172a' : isDone ? '#4ade80' : 'rgba(255,255,255,0.3)',
+                border: isActive ? 'none' : isDone ? '1px solid rgba(74,222,128,0.4)' : '1px solid rgba(255,255,255,0.15)',
+                transition: 'all 0.3s',
+                transform: isActive ? 'scale(1.1)' : 'scale(1)',
+                boxShadow: isActive ? '0 4px 16px rgba(255,255,255,0.3)' : 'none',
+              }}>
+                {isDone ? '✓' : step}
               </div>
               {step < getStepCount() && (
-                <div className={`w-12 h-1 mx-2 transition-colors ${step < displayStep ? 'bg-green-500' : 'bg-slate-200'}`} />
+                <div style={{
+                  width: '32px', height: '2px',
+                  background: isDone ? 'rgba(74,222,128,0.4)' : 'rgba(255,255,255,0.15)',
+                  borderRadius: '1px',
+                  transition: 'background 0.3s',
+                }} />
               )}
             </div>
           )
         })}
       </div>
 
-      <div className="bg-white rounded-3xl p-10 shadow-lg border border-slate-100">
+      {/* Main card */}
+      <div style={glassCard}>
         {/* Step 1: Purpose */}
         {currentStep === 1 && (
-          <div className="space-y-6">
-            <div>
-              <h2 className="text-3xl font-bold text-slate-800 mb-2">用件</h2>
-              <p className="text-slate-500">来訪の目的を選択してください</p>
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <h2 style={{ fontSize: '28px', fontWeight: '700', color: 'white', margin: '0 0 8px' }}>用件</h2>
+            <p style={{ color: 'rgba(255,255,255,0.6)', margin: '0 0 28px', fontSize: '15px' }}>
+              来訪の目的を選択してください
+            </p>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
               {PURPOSES.map(p => (
-                <button key={p.id} onClick={() => setPurpose(p.id)}
-                  className={`p-6 rounded-2xl transition-all border-2 text-left ${
-                    purpose === p.id ? 'border-blue-600 bg-blue-50' : 'border-slate-200 bg-white hover:border-blue-300'
-                  }`}>
-                  <div className="text-3xl mb-2">{p.icon}</div>
-                  <p className="text-lg font-bold text-slate-800">{p.label}</p>
+                <button key={p.id} onClick={() => setPurpose(p.id)} style={{
+                  padding: '20px', borderRadius: '16px', border: 'none', cursor: 'pointer',
+                  textAlign: 'left', transition: 'all 0.2s',
+                  background: purpose === p.id ? 'rgba(59,130,246,0.3)' : 'rgba(255,255,255,0.08)',
+                  outline: purpose === p.id ? '2px solid rgba(59,130,246,0.6)' : '1px solid rgba(255,255,255,0.12)',
+                }}>
+                  <div style={{ fontSize: '28px', marginBottom: '8px' }}>{p.icon}</div>
+                  <p style={{ fontSize: '16px', fontWeight: '700', color: 'white', margin: 0 }}>{p.label}</p>
                 </button>
               ))}
             </div>
-            {error && <div className="p-4 bg-red-50 rounded-xl text-red-600 text-sm font-medium">{error}</div>}
+            {error && <div style={{ marginTop: '16px', padding: '12px 16px', background: 'rgba(239,68,68,0.2)', borderRadius: '12px', color: '#fca5a5', fontSize: '14px', fontWeight: '500' }}>{error}</div>}
           </div>
         )}
 
         {/* Step 2: Delivery Carrier */}
         {currentStep === 2 && isDeliveryFlow && (
-          <div className="space-y-6">
-            <div>
-              <h2 className="text-3xl font-bold text-slate-800 mb-2">配送業者</h2>
-              <p className="text-slate-500">配送業者を選択してください</p>
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <h2 style={{ fontSize: '28px', fontWeight: '700', color: 'white', margin: '0 0 8px' }}>配送業者</h2>
+            <p style={{ color: 'rgba(255,255,255,0.6)', margin: '0 0 28px', fontSize: '15px' }}>
+              配送業者を選択してください
+            </p>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
               {CARRIERS.map(c => (
-                <button key={c.id} onClick={() => setSelectedCarrier(c.id)}
-                  className={`p-6 rounded-2xl transition-all border-2 text-left ${
-                    selectedCarrier === c.id ? 'border-blue-600 bg-blue-50' : 'border-slate-200 bg-white hover:border-blue-300'
-                  }`}>
-                  <div className="text-3xl mb-2">{c.icon}</div>
-                  <p className="text-lg font-bold text-slate-800">{c.label}</p>
+                <button key={c.id} onClick={() => setSelectedCarrier(c.id)} style={{
+                  padding: '20px', borderRadius: '16px', border: 'none', cursor: 'pointer',
+                  textAlign: 'left', transition: 'all 0.2s',
+                  background: selectedCarrier === c.id ? 'rgba(59,130,246,0.3)' : 'rgba(255,255,255,0.08)',
+                  outline: selectedCarrier === c.id ? '2px solid rgba(59,130,246,0.6)' : '1px solid rgba(255,255,255,0.12)',
+                }}>
+                  <div style={{ fontSize: '28px', marginBottom: '8px' }}>{c.icon}</div>
+                  <p style={{ fontSize: '16px', fontWeight: '700', color: 'white', margin: 0 }}>{c.label}</p>
                 </button>
               ))}
             </div>
-            {error && <div className="p-4 bg-red-50 rounded-xl text-red-600 text-sm font-medium">{error}</div>}
+            {error && <div style={{ marginTop: '16px', padding: '12px 16px', background: 'rgba(239,68,68,0.2)', borderRadius: '12px', color: '#fca5a5', fontSize: '14px', fontWeight: '500' }}>{error}</div>}
           </div>
         )}
 
         {/* Step 2: Visitor Info */}
         {currentStep === 2 && !isDeliveryFlow && (
-          <div className="space-y-6">
-            <div>
-              <h2 className="text-3xl font-bold text-slate-800 mb-2">基本情報</h2>
-              <p className="text-slate-500">来訪者情報を入力してください</p>
-            </div>
-            <div>
-              <label className="block text-lg font-semibold text-slate-700 mb-3">
-                お名前 <span className="text-red-500">*</span>
+          <div>
+            <h2 style={{ fontSize: '28px', fontWeight: '700', color: 'white', margin: '0 0 8px' }}>基本情報</h2>
+            <p style={{ color: 'rgba(255,255,255,0.6)', margin: '0 0 28px', fontSize: '15px' }}>
+              来訪者情報を入力してください
+            </p>
+            <div style={{ marginBottom: '20px' }}>
+              <label style={{ display: 'block', fontSize: '15px', fontWeight: '600', color: 'rgba(255,255,255,0.8)', marginBottom: '8px' }}>
+                お名前 <span style={{ color: '#f87171' }}>*</span>
               </label>
-              <input type="text" value={visitorName}
+              <input
+                type="text" value={visitorName}
                 onChange={e => setVisitorName(e.target.value)}
                 placeholder="山田 太郎"
-                className="w-full px-6 py-4 text-lg border-2 border-slate-200 rounded-2xl focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all" />
+                style={inputStyle}
+              />
             </div>
-            <div>
-              <label className="block text-lg font-semibold text-slate-700 mb-3">
-                会社名 <span className="text-slate-400">(任意)</span>
+            <div style={{ marginBottom: '8px' }}>
+              <label style={{ display: 'block', fontSize: '15px', fontWeight: '600', color: 'rgba(255,255,255,0.8)', marginBottom: '8px' }}>
+                会社名 <span style={{ color: 'rgba(255,255,255,0.4)', fontWeight: '400' }}>(任意)</span>
               </label>
-              <input type="text" value={visitorCompany}
+              <input
+                type="text" value={visitorCompany}
                 onChange={e => setVisitorCompany(e.target.value)}
                 placeholder="株式会社 〇〇〇"
-                className="w-full px-6 py-4 text-lg border-2 border-slate-200 rounded-2xl focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all" />
+                style={inputStyle}
+              />
             </div>
-            {error && <div className="p-4 bg-red-50 rounded-xl text-red-600 text-sm font-medium">{error}</div>}
+            {error && <div style={{ marginTop: '16px', padding: '12px 16px', background: 'rgba(239,68,68,0.2)', borderRadius: '12px', color: '#fca5a5', fontSize: '14px', fontWeight: '500' }}>{error}</div>}
           </div>
         )}
 
         {/* Step 3: Employee Selection */}
         {currentStep === 3 && (
-          <div className="space-y-6">
-            <div>
-              <h2 className="text-3xl font-bold text-slate-800 mb-2">担当者を選択</h2>
-              <p className="text-slate-500">対応される担当者を選択してください</p>
+          <div>
+            <h2 style={{ fontSize: '28px', fontWeight: '700', color: 'white', margin: '0 0 8px' }}>担当者を選択</h2>
+            <p style={{ color: 'rgba(255,255,255,0.6)', margin: '0 0 20px', fontSize: '15px' }}>
+              対応される担当者を選択してください
+            </p>
+            {/* Search */}
+            <div style={{ marginBottom: '16px' }}>
+              <input
+                type="text" value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+                placeholder="🔍 名前で検索..."
+                style={inputStyle}
+              />
             </div>
-            <div className="space-y-4">
-              <div className="relative">
-                <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400" />
-                <input type="text" value={searchQuery}
-                  onChange={e => setSearchQuery(e.target.value)}
-                  placeholder="名前で検索..."
-                  className="w-full pl-12 pr-6 py-4 text-lg border-2 border-slate-200 rounded-2xl focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all" />
+            {/* Department chips */}
+            {departments.length > 0 && (
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '16px' }}>
+                <button onClick={() => setSelectedDepartment(null)} style={{
+                  padding: '6px 16px', borderRadius: '20px', border: 'none', cursor: 'pointer',
+                  fontSize: '13px', fontWeight: '600', transition: 'all 0.2s',
+                  background: !selectedDepartment ? 'white' : 'rgba(255,255,255,0.1)',
+                  color: !selectedDepartment ? '#0f172a' : 'rgba(255,255,255,0.7)',
+                }}>全員</button>
+                {departments.map(dept => (
+                  <button key={dept} onClick={() => setSelectedDepartment(dept)} style={{
+                    padding: '6px 16px', borderRadius: '20px', border: 'none', cursor: 'pointer',
+                    fontSize: '13px', fontWeight: '600', transition: 'all 0.2s',
+                    background: selectedDepartment === dept ? 'white' : 'rgba(255,255,255,0.1)',
+                    color: selectedDepartment === dept ? '#0f172a' : 'rgba(255,255,255,0.7)',
+                  }}>{dept}</button>
+                ))}
               </div>
-              {departments.length > 0 && (
-                <div className="flex flex-wrap gap-2">
-                  <button onClick={() => setSelectedDepartment(null)}
-                    className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
-                      !selectedDepartment ? 'bg-blue-600 text-white' : 'bg-slate-200 text-slate-700 hover:bg-slate-300'
-                    }`}>全員</button>
-                  {departments.map(dept => (
-                    <button key={dept} onClick={() => setSelectedDepartment(dept)}
-                      className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
-                        selectedDepartment === dept ? 'bg-blue-600 text-white' : 'bg-slate-200 text-slate-700 hover:bg-slate-300'
-                      }`}>{dept}</button>
-                  ))}
-                </div>
-              )}
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-96 overflow-y-auto">
+            )}
+            {/* Employee grid */}
+            <div style={{
+              display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px',
+              maxHeight: '320px', overflowY: 'auto',
+              paddingRight: '4px',
+            }}>
               {filteredEmployees.length > 0 ? (
                 filteredEmployees.map(emp => (
-                  <button key={emp.id} onClick={() => setSelectedEmployee(emp)}
-                    className={`p-4 rounded-2xl transition-all border-2 text-left flex items-center gap-4 ${
-                      selectedEmployee?.id === emp.id ? 'border-blue-600 bg-blue-50' : 'border-slate-200 bg-white hover:border-blue-300'
-                    }`}>
-                    <div className="w-12 h-12 bg-gradient-to-br from-blue-400 to-indigo-600 rounded-full flex items-center justify-center text-white font-bold flex-shrink-0">
+                  <button key={emp.id} onClick={() => setSelectedEmployee(emp)} style={{
+                    padding: '14px', borderRadius: '14px', border: 'none', cursor: 'pointer',
+                    textAlign: 'left', display: 'flex', alignItems: 'center', gap: '12px',
+                    transition: 'all 0.2s',
+                    background: selectedEmployee?.id === emp.id ? 'rgba(59,130,246,0.3)' : 'rgba(255,255,255,0.06)',
+                    outline: selectedEmployee?.id === emp.id ? '2px solid rgba(59,130,246,0.6)' : '1px solid rgba(255,255,255,0.1)',
+                  }}>
+                    <div style={{
+                      width: '40px', height: '40px', borderRadius: '50%',
+                      background: 'linear-gradient(135deg, #3b82f6, #8b5cf6)',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      color: 'white', fontWeight: '700', fontSize: '15px', flexShrink: 0,
+                    }}>
                       {emp.name.charAt(0)}
                     </div>
-                    <div className="flex-1">
-                      <p className="font-bold text-slate-800">{emp.name}</p>
-                      {emp.department && <p className="text-sm text-slate-400">{emp.department}</p>}
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <p style={{ fontWeight: '600', color: 'white', margin: 0, fontSize: '14px' }}>{emp.name}</p>
+                      {emp.department && (
+                        <p style={{ color: 'rgba(255,255,255,0.45)', fontSize: '12px', margin: '2px 0 0' }}>{emp.department}</p>
+                      )}
                     </div>
                   </button>
                 ))
               ) : (
-                <div className="col-span-full text-center py-8 text-slate-500">該当する担当者が見つかりません</div>
+                <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '32px 0', color: 'rgba(255,255,255,0.4)' }}>
+                  該当する担当者が見つかりません
+                </div>
               )}
             </div>
-            {error && <div className="p-4 bg-red-50 rounded-xl text-red-600 text-sm font-medium">{error}</div>}
+            {error && <div style={{ marginTop: '16px', padding: '12px 16px', background: 'rgba(239,68,68,0.2)', borderRadius: '12px', color: '#fca5a5', fontSize: '14px', fontWeight: '500' }}>{error}</div>}
           </div>
         )}
 
         {/* Step 4: Confirmation */}
         {currentStep === 4 && (
-          <div className="space-y-6">
-            <div>
-              <h2 className="text-3xl font-bold text-slate-800 mb-2">確認</h2>
-              <p className="text-slate-500">入力内容をご確認ください</p>
-            </div>
-            <div className="bg-slate-50 rounded-2xl p-6 space-y-4">
-              <div className="flex justify-between items-center py-3 border-b border-slate-200">
-                <span className="text-slate-600 font-medium">お名前</span>
-                <span className="text-lg font-bold text-slate-800">{visitorName}様</span>
-              </div>
-              {visitorCompany && (
-                <div className="flex justify-between items-center py-3 border-b border-slate-200">
-                  <span className="text-slate-600 font-medium">会社名</span>
-                  <span className="text-lg font-bold text-slate-800">{visitorCompany}</span>
+          <div>
+            <h2 style={{ fontSize: '28px', fontWeight: '700', color: 'white', margin: '0 0 8px' }}>確認</h2>
+            <p style={{ color: 'rgba(255,255,255,0.6)', margin: '0 0 28px', fontSize: '15px' }}>
+              入力内容をご確認ください
+            </p>
+            <div style={{
+              background: 'rgba(255,255,255,0.08)',
+              borderRadius: '16px',
+              padding: '8px 24px',
+            }}>
+              {[
+                { label: 'お名前', value: `${visitorName}様` },
+                ...(visitorCompany ? [{ label: '会社名', value: visitorCompany }] : []),
+                { label: '用件', value: getPurposeLabel(purpose) },
+                { label: '担当者', value: selectedEmployee?.name || '' },
+              ].map((item, i, arr) => (
+                <div key={item.label} style={{
+                  display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                  padding: '16px 0',
+                  borderBottom: i < arr.length - 1 ? '1px solid rgba(255,255,255,0.08)' : 'none',
+                }}>
+                  <span style={{ color: 'rgba(255,255,255,0.5)', fontWeight: '500', fontSize: '14px' }}>{item.label}</span>
+                  <span style={{ color: 'white', fontSize: '17px', fontWeight: '700' }}>{item.value}</span>
                 </div>
-              )}
-              <div className="flex justify-between items-center py-3 border-b border-slate-200">
-                <span className="text-slate-600 font-medium">用件</span>
-                <span className="text-lg font-bold text-slate-800">{getPurposeLabel(purpose)}</span>
-              </div>
-              <div className="flex justify-between items-center py-3">
-                <span className="text-slate-600 font-medium">担当者</span>
-                <span className="text-lg font-bold text-slate-800">{selectedEmployee?.name}</span>
-              </div>
+              ))}
             </div>
-            {error && <div className="p-4 bg-red-50 rounded-xl text-red-600 text-sm font-medium">{error}</div>}
+            {error && <div style={{ marginTop: '16px', padding: '12px 16px', background: 'rgba(239,68,68,0.2)', borderRadius: '12px', color: '#fca5a5', fontSize: '14px', fontWeight: '500' }}>{error}</div>}
           </div>
         )}
 
-        {/* Navigation */}
-        <div className="flex gap-4 mt-10">
-          <button onClick={handleBack} disabled={loading}
-            className="flex-1 px-6 py-4 border-2 border-slate-300 text-slate-700 font-bold text-lg rounded-2xl hover:bg-slate-50 transition-all disabled:opacity-50">
+        {/* Navigation buttons */}
+        <div style={{ display: 'flex', gap: '12px', marginTop: '32px' }}>
+          <button onClick={handleBack} disabled={loading} style={{
+            flex: 1, padding: '16px', borderRadius: '14px',
+            border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(255,255,255,0.06)',
+            color: 'rgba(255,255,255,0.7)', fontSize: '16px', fontWeight: '600',
+            cursor: loading ? 'default' : 'pointer', opacity: loading ? 0.5 : 1,
+            transition: 'all 0.2s',
+          }}>
             戻る
           </button>
-          <button onClick={handleNext} disabled={loading}
-            className="flex-1 px-6 py-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold text-lg rounded-2xl hover:shadow-lg transition-all disabled:opacity-50 active:scale-[0.98] flex items-center justify-center gap-2">
-            {loading ? '処理中...' : currentStep === 4 ? '受付完了' : '次へ'}
-            {!loading && typeof currentStep === 'number' && currentStep < (isDeliveryFlow ? 2 : 4) && <ChevronRight className="w-5 h-5" />}
+          <button onClick={handleNext} disabled={loading} style={{
+            flex: 1, padding: '16px', borderRadius: '14px',
+            border: 'none', background: 'white', color: '#0f172a',
+            fontSize: '16px', fontWeight: '700', cursor: loading ? 'default' : 'pointer',
+            opacity: loading ? 0.7 : 1, transition: 'all 0.2s',
+            boxShadow: '0 4px 16px rgba(255,255,255,0.15)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
+          }}>
+            {loading ? '処理中...' : currentStep === 4 ? '受付完了' : '次へ →'}
           </button>
         </div>
       </div>
