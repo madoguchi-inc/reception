@@ -66,31 +66,18 @@ export default function ReceptionLayout({ children }: { children: React.ReactNod
         }}
       />
 
-      {/* Header with clock and logo */}
+      {/* Header with clock only */}
       <div
         style={{
           position: 'relative',
           zIndex: 2,
           display: 'flex',
-          justifyContent: 'space-between',
+          justifyContent: 'flex-end',
           alignItems: 'center',
           padding: '16px 32px',
-          borderBottom: '1px solid rgba(255,255,255,0.1)',
+          borderBottom: '1px solid rgba(255,255,255,0.08)',
         }}
       >
-        <Image
-          src="/logo.svg"
-          alt="まどぐち株式会社"
-          width={160}
-          height={49}
-          priority
-          style={{
-            height: '32px',
-            width: 'auto',
-            filter: 'drop-shadow(0 1px 4px rgba(0,0,0,0.3))',
-            opacity: 0.9,
-          }}
-        />
         <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
           <div style={{
             fontSize: '13px',

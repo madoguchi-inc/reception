@@ -1,25 +1,43 @@
 'use client'
 import { useRouter } from 'next/navigation'
+import Image from 'next/image'
 
 export default function ReceptionHome() {
   const router = useRouter()
 
   return (
     <div style={{ width: '100%', maxWidth: '560px', margin: '0 auto', textAlign: 'center' }}>
+      {/* Company logo - big and centered */}
+      <div style={{ marginBottom: '32px' }}>
+        <Image
+          src="/logo.svg"
+          alt="まどぐち株式会社"
+          width={360}
+          height={111}
+          priority
+          style={{
+            height: 'auto',
+            width: '320px',
+            maxWidth: '80vw',
+            filter: 'drop-shadow(0 4px 16px rgba(0,0,0,0.3))',
+          }}
+        />
+      </div>
+
       {/* Welcome text */}
-      <div style={{ marginBottom: '48px' }}>
+      <div style={{ marginBottom: '40px' }}>
         <p style={{
-          fontSize: '16px',
-          fontWeight: '300',
-          color: 'rgba(255,255,255,0.5)',
-          letterSpacing: '6px',
-          margin: '0 0 12px',
+          fontSize: '14px',
+          fontWeight: '400',
+          color: 'rgba(255,255,255,0.4)',
+          letterSpacing: '8px',
+          margin: '0 0 16px',
           textTransform: 'uppercase' as const,
         }}>
           RECEPTION
         </p>
         <h1 style={{
-          fontSize: '42px',
+          fontSize: '44px',
           fontWeight: '700',
           color: 'white',
           margin: '0 0 8px',
@@ -28,8 +46,8 @@ export default function ReceptionHome() {
           ようこそ
         </h1>
         <p style={{
-          fontSize: '16px',
-          color: 'rgba(255,255,255,0.6)',
+          fontSize: '15px',
+          color: 'rgba(255,255,255,0.5)',
           margin: 0,
           fontWeight: '300',
         }}>
@@ -41,8 +59,8 @@ export default function ReceptionHome() {
       <div style={{
         width: '48px',
         height: '2px',
-        background: 'rgba(255,255,255,0.25)',
-        margin: '0 auto 48px',
+        background: 'rgba(255,255,255,0.2)',
+        margin: '0 auto 40px',
         borderRadius: '1px',
       }} />
 
@@ -50,8 +68,8 @@ export default function ReceptionHome() {
       <div style={{
         display: 'flex',
         flexDirection: 'column',
-        gap: '16px',
-        maxWidth: '380px',
+        gap: '14px',
+        maxWidth: '360px',
         margin: '0 auto',
       }}>
         <button
