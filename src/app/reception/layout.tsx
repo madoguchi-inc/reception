@@ -75,7 +75,7 @@ export default function ReceptionLayout({ children }: { children: React.ReactNod
           justifyContent: 'flex-end',
           alignItems: 'center',
           padding: '16px 32px',
-          borderBottom: '1px solid rgba(255,255,255,0.08)',
+          /* no border */
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
