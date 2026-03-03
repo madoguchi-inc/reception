@@ -15,7 +15,7 @@ export async function sendWebhookMessage(webhookUrl: string, message: ChatMessag
   return res.json()
 }
 
-// Create a visitor notification card (no buttons - webhook doesn't support interactive)
+// Create a visitor notification card with action links
 export function createVisitorNotificationCard(params: {
   visitorName: string
   visitorCompany?: string
@@ -24,6 +24,8 @@ export function createVisitorNotificationCard(params: {
   appointmentId: string
 }) {
   const time = new Date().toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Tokyo' })
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://spectacular-fenglisu-5c47ed.netlify.app'
+  const respondBase = `${appUrl}/reception/respond/${params.appointmentId}`
 
   return {
     text: `🏢 来訪通知: ${params.visitorName}様がお越しです`,
@@ -63,6 +65,36 @@ export function createVisitorNotificationCard(params: {
                   topLabel: '受付時刻',
                   text: time,
                   startIcon: { knownIcon: 'CLOCK' },
+                },
+              },
+            ],
+          },
+          // アクションリンク
+          {
+            header: '対応する',
+            widgets: [
+              {
+                buttonList: {
+                  buttons: [
+                    {
+                      text: '✅ 向かいます',
+                      onClick: {
+                        openLink: { url: `${respondBase}?action=on_my_way` },
+                      },
+                    },
+                    {
+                      text: '🕐 少々お待ちください',
+                      onClick: {
+                        openLink: { url: `${respondBase}?action=please_wait` },
+                      },
+                    },
+                    {
+                      text: '📞 通話する',
+                      onClick: {
+                        openLink: { url: `${respondBase}?action=call` },
+                      },
+                    },
+                  ],
                 },
               },
             ],

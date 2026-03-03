@@ -1,6 +1,8 @@
 'use client'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef, useCallback } from 'react'
 import { useRouter, useParams } from 'next/navigation'
+import { supabase } from '@/lib/supabase'
+import { createPeerConnection } from '@/lib/webrtc'
 
 interface AppointmentInfo {
   visitorName: string
@@ -8,7 +10,8 @@ interface AppointmentInfo {
   employeeName: string
   meetingRoom?: string
   status: string
-  response?: string
+  response?: string | null
+  callStatus?: string | null
 }
 
 const glassCard: React.CSSProperties = {
@@ -25,21 +28,126 @@ const glassCard: React.CSSProperties = {
 export default function WaitingPage() {
   const router = useRouter()
   const params = useParams()
+  const visitId = params.id as string
+
   const [info, setInfo] = useState<AppointmentInfo | null>(null)
   const [dots, setDots] = useState(0)
   const [loading, setLoading] = useState(true)
 
+  // 通話関連
+  const [callActive, setCallActive] = useState(false)
+  const [callDuration, setCallDuration] = useState(0)
+  const [callConnected, setCallConnected] = useState(false)
+
+  const pcRef = useRef<RTCPeerConnection | null>(null)
+  const streamRef = useRef<MediaStream | null>(null)
+  const audioRef = useRef<HTMLAudioElement | null>(null)
+  const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null)
+  const timerRef = useRef<NodeJS.Timeout | null>(null)
+  const callInitiatedRef = useRef(false)
+
+  // アニメーション
   useEffect(() => {
     const timer = setInterval(() => setDots(d => (d + 1) % 4), 500)
     return () => clearInterval(timer)
   }, [])
 
+  // 通話終了
+  const endCall = useCallback(() => {
+    if (timerRef.current) clearInterval(timerRef.current)
+    if (streamRef.current) streamRef.current.getTracks().forEach(t => t.stop())
+    if (pcRef.current) pcRef.current.close()
+    if (channelRef.current) {
+      channelRef.current.send({ type: 'broadcast', event: 'end-call', payload: {} })
+      channelRef.current.unsubscribe()
+    }
+    setCallActive(false)
+    setCallConnected(false)
+    callInitiatedRef.current = false
+    pcRef.current = null
+    streamRef.current = null
+    channelRef.current = null
+  }, [])
+
+  // WebRTC通話を受信側として開始
+  const startCallAsReceiver = useCallback(async () => {
+    if (callInitiatedRef.current) return
+    callInitiatedRef.current = true
+    setCallActive(true)
+
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
+      })
+      streamRef.current = stream
+
+      const pc = createPeerConnection()
+      pcRef.current = pc
+
+      stream.getTracks().forEach(track => pc.addTrack(track, stream))
+
+      pc.ontrack = (ev) => {
+        if (audioRef.current) audioRef.current.srcObject = ev.streams[0]
+      }
+
+      pc.onconnectionstatechange = () => {
+        if (pc.connectionState === 'connected') {
+          setCallConnected(true)
+          timerRef.current = setInterval(() => setCallDuration(d => d + 1), 1000)
+        } else if (pc.connectionState === 'disconnected' || pc.connectionState === 'failed') {
+          endCall()
+        }
+      }
+
+      const channel = supabase.channel(`call:${visitId}`)
+      channelRef.current = channel
+
+      // Offer受信 → Answer返信
+      channel.on('broadcast', { event: 'offer' }, async ({ payload }) => {
+        if (pc.signalingState === 'stable') {
+          await pc.setRemoteDescription(new RTCSessionDescription(payload.offer))
+          const answer = await pc.createAnswer()
+          await pc.setLocalDescription(answer)
+          channel.send({ type: 'broadcast', event: 'answer', payload: { answer } })
+        }
+      })
+
+      channel.on('broadcast', { event: 'ice-candidate' }, async ({ payload }) => {
+        try { await pc.addIceCandidate(new RTCIceCandidate(payload.candidate)) } catch {}
+      })
+
+      channel.on('broadcast', { event: 'end-call' }, () => { endCall() })
+
+      pc.onicecandidate = (ev) => {
+        if (ev.candidate) {
+          channel.send({ type: 'broadcast', event: 'ice-candidate', payload: { candidate: ev.candidate } })
+        }
+      }
+
+      await channel.subscribe()
+    } catch (err) {
+      console.error('Call receiver error:', err)
+      endCall()
+    }
+  }, [visitId, endCall])
+
+  // ステータスポーリング
   useEffect(() => {
     const fetchStatus = async () => {
       try {
-        const res = await fetch(`/api/reception/status/${params.id}`)
+        const res = await fetch(`/api/reception/status/${visitId}`)
         const data = await res.json()
-        if (data.success) setInfo(data.appointment)
+        if (data.success) {
+          setInfo(data.appointment)
+          // 通話リクエスト検知
+          if (data.appointment.callStatus === 'ringing' && !callInitiatedRef.current) {
+            startCallAsReceiver()
+          }
+          // 通話終了検知
+          if (data.appointment.callStatus === 'ended' && callInitiatedRef.current) {
+            endCall()
+          }
+        }
       } catch (err) {
         console.error('Failed to fetch status:', err)
       } finally {
@@ -49,12 +157,14 @@ export default function WaitingPage() {
     fetchStatus()
     const interval = setInterval(fetchStatus, 5000)
     return () => clearInterval(interval)
-  }, [params.id])
+  }, [visitId, startCallAsReceiver, endCall])
 
+  // 5分タイムアウト（通話中は無効化）
   useEffect(() => {
+    if (callActive) return
     const timeout = setTimeout(() => router.push('/reception'), 300000)
     return () => clearTimeout(timeout)
-  }, [router])
+  }, [router, callActive])
 
   const responseMessage = info?.response === 'on_my_way'
     ? '担当者が向かっております'
@@ -64,6 +174,61 @@ export default function WaitingPage() {
 
   const isRejected = info?.response === 'rejected'
 
+  const formatTime = (s: number) => `${Math.floor(s / 60)}:${(s % 60).toString().padStart(2, '0')}`
+
+  // ======= 通話中UI =======
+  if (callActive) {
+    return (
+      <div style={{ width: '100%', maxWidth: '480px', margin: '0 auto' }}>
+        <div style={glassCard}>
+          <div style={{
+            width: '100px', height: '100px', borderRadius: '50%',
+            background: callConnected ? 'rgba(74,222,128,0.2)' : 'rgba(59,130,246,0.15)',
+            margin: '0 auto 24px',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontSize: '48px',
+          }}>
+            📞
+          </div>
+
+          <h2 style={{ fontSize: '28px', fontWeight: '700', color: callConnected ? '#4ade80' : 'white', margin: '0 0 4px' }}>
+            {callConnected ? '通話中' : '接続中...'}
+          </h2>
+
+          {info && (
+            <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '14px', margin: '0 0 16px' }}>
+              担当者: {info.employeeName}
+            </p>
+          )}
+
+          <p style={{
+            fontSize: '40px', fontWeight: '700',
+            color: callConnected ? '#4ade80' : 'rgba(255,255,255,0.4)',
+            margin: '0 0 40px',
+            fontVariantNumeric: 'tabular-nums',
+          }}>
+            {formatTime(callDuration)}
+          </p>
+
+          <audio ref={audioRef} autoPlay playsInline />
+
+          <button
+            onClick={endCall}
+            style={{
+              width: '100%', padding: '18px', borderRadius: '14px',
+              border: 'none', background: '#ef4444', color: 'white',
+              fontSize: '16px', fontWeight: '700', cursor: 'pointer',
+              boxShadow: '0 4px 20px rgba(239,68,68,0.35)',
+            }}
+          >
+            通話を終了
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  // ======= 通常の待機UI =======
   return (
     <div style={{ width: '100%', maxWidth: '480px', margin: '0 auto' }}>
       <div style={glassCard}>
@@ -111,7 +276,6 @@ export default function WaitingPage() {
           </>
         ) : (
           <>
-            {/* Animated waiting indicator */}
             <div style={{
               width: '80px', height: '80px', borderRadius: '50%',
               background: 'rgba(59,130,246,0.2)', margin: '0 auto 20px',
@@ -161,7 +325,7 @@ export default function WaitingPage() {
           </div>
         )}
 
-        {/* Footer message */}
+        {/* Footer */}
         {!responseMessage && !isRejected && (
           <div style={{
             marginTop: '24px', paddingTop: '20px',

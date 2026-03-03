@@ -34,6 +34,16 @@ model Visit {
   purpose        String      // MEETING, INTERVIEW, DELIVERY, OTHER
   employeeId     String?
   status         String      @default("CHECKED_IN") // CHECKED_IN, NOTIFIED, COMPLETED
+
+  // 担当者の応答
+  response       String?     // "on_my_way", "please_wait", "rejected"
+  responseAt     DateTime?
+
+  // 通話
+  callStatus     String?     // "ringing", "connected", "ended"
+  callStartedAt  DateTime?
+  callEndedAt    DateTime?
+
   notifiedAt     DateTime?
   completedAt    DateTime?
   createdAt      DateTime    @default(now())
