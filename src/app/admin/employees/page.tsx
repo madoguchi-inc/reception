@@ -205,100 +205,111 @@ export default function EmployeesPage() {
         })}
       </div>
 
-      {/* Employee Cards (Grid) */}
+      {/* Employee Table */}
       <div style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
-        gap: '16px',
+        background: 'white', borderRadius: '16px', border: '1px solid #f1f5f9',
+        boxShadow: '0 1px 3px rgba(0,0,0,0.04)', overflow: 'hidden',
       }}>
-        {filtered.map((emp) => {
-          const dc = deptColors[emp.department] || { bg: '#f1f5f9', color: '#475569' };
-          return (
-            <div key={emp.id} style={{
-              background: 'white', borderRadius: '14px', padding: '20px',
-              border: '1px solid #f1f5f9',
-              boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
-              opacity: emp.isActive ? 1 : 0.6,
-              transition: 'all 0.2s',
-            }}>
-              <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '12px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                  <div style={{
-                    width: '42px', height: '42px', borderRadius: '12px',
-                    background: dc.bg, color: dc.color,
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    fontSize: '16px', fontWeight: '700',
+        <div style={{ overflowX: 'auto' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <thead>
+              <tr style={{ background: '#f8fafc' }}>
+                {['名前', 'メール', '部署', '役職', 'ステータス', 'アクション'].map((h) => (
+                  <th key={h} style={{
+                    padding: '12px 24px', textAlign: 'left',
+                    fontSize: '11px', fontWeight: '600', color: '#94a3b8',
+                    textTransform: 'uppercase', letterSpacing: '0.5px',
+                    borderBottom: '1px solid #f1f5f9',
                   }}>
-                    {emp.name.charAt(0)}
-                  </div>
-                  <div>
-                    <div style={{ fontSize: '15px', fontWeight: '700', color: '#0f172a' }}>{emp.name}</div>
-                    <div style={{ fontSize: '12px', color: '#94a3b8', marginTop: '2px' }}>{emp.email}</div>
-                  </div>
-                </div>
-                <span style={{
-                  padding: '3px 10px', borderRadius: '20px',
-                  fontSize: '11px', fontWeight: '600',
-                  background: dc.bg, color: dc.color,
-                }}>
-                  {emp.department}
-                </span>
-              </div>
-
-              {emp.position && (
-                <div style={{ fontSize: '12px', color: '#64748b', marginBottom: '12px' }}>
-                  役職: {emp.position}
-                </div>
+                    {h}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.length > 0 ? filtered.map((emp) => {
+                const dc = deptColors[emp.department] || { bg: '#f1f5f9', color: '#475569' };
+                return (
+                  <tr key={emp.id} style={{ borderBottom: '1px solid #f8fafc', opacity: emp.isActive ? 1 : 0.5 }}>
+                    <td style={{ padding: '14px 24px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <div style={{
+                          width: '34px', height: '34px', borderRadius: '10px',
+                          background: dc.bg, color: dc.color,
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          fontSize: '14px', fontWeight: '700', flexShrink: 0,
+                        }}>
+                          {emp.name.charAt(0)}
+                        </div>
+                        <span style={{ fontSize: '13px', fontWeight: '600', color: '#0f172a' }}>{emp.name}</span>
+                      </div>
+                    </td>
+                    <td style={{ padding: '14px 24px', fontSize: '13px', color: '#64748b' }}>
+                      {emp.email}
+                    </td>
+                    <td style={{ padding: '14px 24px' }}>
+                      <span style={{
+                        display: 'inline-block', padding: '3px 10px', borderRadius: '20px',
+                        fontSize: '11px', fontWeight: '600',
+                        background: dc.bg, color: dc.color,
+                      }}>
+                        {emp.department}
+                      </span>
+                    </td>
+                    <td style={{ padding: '14px 24px', fontSize: '13px', color: '#64748b' }}>
+                      {emp.position || '—'}
+                    </td>
+                    <td style={{ padding: '14px 24px' }}>
+                      <button
+                        onClick={() => handleToggleStatus(emp)}
+                        style={{
+                          padding: '4px 12px', borderRadius: '20px', border: 'none',
+                          background: emp.isActive ? '#d1fae5' : '#f1f5f9',
+                          color: emp.isActive ? '#065f46' : '#94a3b8',
+                          fontSize: '11px', fontWeight: '600', cursor: 'pointer',
+                        }}
+                      >
+                        {emp.isActive ? '● 活動中' : '○ 非活動'}
+                      </button>
+                    </td>
+                    <td style={{ padding: '14px 24px' }}>
+                      <div style={{ display: 'flex', gap: '8px' }}>
+                        <button
+                          onClick={() => handleOpenModal(emp)}
+                          style={{
+                            padding: '5px 10px', borderRadius: '8px', border: '1px solid #e2e8f0',
+                            background: 'white', color: '#3b82f6', fontSize: '12px', fontWeight: '500',
+                            cursor: 'pointer',
+                          }}
+                        >
+                          編集
+                        </button>
+                        <button
+                          onClick={() => handleDelete(emp.id, emp.name)}
+                          style={{
+                            padding: '5px 10px', borderRadius: '8px', border: '1px solid #fecaca',
+                            background: 'white', color: '#ef4444', fontSize: '12px', fontWeight: '500',
+                            cursor: 'pointer',
+                          }}
+                        >
+                          削除
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              }) : (
+                <tr>
+                  <td colSpan={6} style={{ padding: '60px 24px', textAlign: 'center' }}>
+                    <div style={{ fontSize: '48px', marginBottom: '12px' }}>🔍</div>
+                    <p style={{ color: '#94a3b8', fontSize: '14px', fontWeight: '500', margin: 0 }}>該当する社員が見つかりません</p>
+                  </td>
+                </tr>
               )}
-
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: '12px', borderTop: '1px solid #f8fafc' }}>
-                <button
-                  onClick={() => handleToggleStatus(emp)}
-                  style={{
-                    padding: '5px 12px', borderRadius: '8px', border: 'none',
-                    background: emp.isActive ? '#d1fae5' : '#f1f5f9',
-                    color: emp.isActive ? '#065f46' : '#94a3b8',
-                    fontSize: '11px', fontWeight: '600', cursor: 'pointer',
-                  }}
-                >
-                  {emp.isActive ? '● 活動中' : '○ 非活動'}
-                </button>
-                <div style={{ display: 'flex', gap: '8px' }}>
-                  <button
-                    onClick={() => handleOpenModal(emp)}
-                    style={{
-                      padding: '6px 12px', borderRadius: '8px', border: '1px solid #e2e8f0',
-                      background: 'white', color: '#3b82f6', fontSize: '12px', fontWeight: '500',
-                      cursor: 'pointer',
-                    }}
-                  >
-                    ✏️ 編集
-                  </button>
-                  <button
-                    onClick={() => handleDelete(emp.id, emp.name)}
-                    style={{
-                      padding: '6px 12px', borderRadius: '8px', border: '1px solid #fecaca',
-                      background: 'white', color: '#ef4444', fontSize: '12px', fontWeight: '500',
-                      cursor: 'pointer',
-                    }}
-                  >
-                    🗑
-                  </button>
-                </div>
-              </div>
-            </div>
-          );
-        })}
-      </div>
-
-      {filtered.length === 0 && (
-        <div style={{
-          textAlign: 'center', padding: '60px 20px', color: '#94a3b8',
-        }}>
-          <div style={{ fontSize: '48px', marginBottom: '12px' }}>🔍</div>
-          <p style={{ fontSize: '15px', fontWeight: '500' }}>該当する社員が見つかりません</p>
+            </tbody>
+          </table>
         </div>
-      )}
+      </div>
 
       {/* Modal */}
       {isModalOpen && (
