@@ -102,12 +102,12 @@ export default function EmployeesPage() {
     '役員': { bg: '#fef3c7', color: '#92400e' },
     '総務': { bg: '#dbeafe', color: '#1e40af' },
     '開発': { bg: '#d1fae5', color: '#065f46' },
-    '不用品': { bg: '#fce7f3', color: '#9d174d' },
-    '外壁': { bg: '#e0e7ff', color: '#3730a3' },
-    'おそうじ': { bg: '#ccfbf1', color: '#115e59' },
+    '不用品回収の窓口': { bg: '#fce7f3', color: '#9d174d' },
+    'gaiheki+': { bg: '#e0e7ff', color: '#3730a3' },
+    'おそうじ合衆国': { bg: '#ccfbf1', color: '#115e59' },
     '人事': { bg: '#fef9c3', color: '#854d0e' },
     'マーケティング': { bg: '#ede9fe', color: '#5b21b6' },
-    'ブランド': { bg: '#ffe4e6', color: '#9f1239' },
+    'みんなの買取': { bg: '#ffe4e6', color: '#9f1239' },
     'オヨビー': { bg: '#f0fdf4', color: '#166534' },
   };
 
