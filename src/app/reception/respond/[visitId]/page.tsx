@@ -1,14 +1,7 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { useRouter, useParams, useSearchParams } from 'next/navigation'
-
-interface VisitInfo {
-  visitorName: string
-  visitorCompany?: string
-  purpose: string
-  employeeName: string
-}
 
 const glassCard: React.CSSProperties = {
   background: 'rgba(255,255,255,0.12)',
@@ -27,183 +20,107 @@ const actionConfig: Record<string, { icon: string; label: string; color: string 
   call: { icon: '📞', label: '通話する', color: '#f59e0b' },
 }
 
-const purposeLabels: Record<string, string> = {
-  meeting: '打ち合わせ',
-  interview: '面接',
-  delivery: '配達',
-  other: 'その他',
-}
-
 export default function RespondPage() {
   const router = useRouter()
   const params = useParams()
   const searchParams = useSearchParams()
-  const [info, setInfo] = useState<VisitInfo | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [submitting, setSubmitting] = useState(false)
-  const [submitted, setSubmitted] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const [status, setStatus] = useState<'sending' | 'done' | 'error'>('sending')
+  const [errorMsg, setErrorMsg] = useState('')
+  const hasSent = useRef(false)
 
   const visitId = params.visitId as string
   const action = searchParams.get('action') || 'on_my_way'
   const config = actionConfig[action] || actionConfig.on_my_way
 
+  // ページ読み込み時に自動で応答を送信
   useEffect(() => {
-    const fetchVisitInfo = async () => {
+    if (hasSent.current) return
+    hasSent.current = true
+
+    const sendResponse = async () => {
       try {
-        const res = await fetch(`/api/reception/status/${visitId}`)
+        const res = await fetch('/api/reception/respond', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ visitId, action }),
+        })
         const data = await res.json()
-        if (data.success && data.appointment) {
-          setInfo({
-            visitorName: data.appointment.visitorName,
-            visitorCompany: data.appointment.visitorCompany,
-            purpose: purposeLabels[data.appointment.purpose] || data.appointment.purpose,
-            employeeName: data.appointment.employeeName,
-          })
+        if (data.success) {
+          setStatus('done')
+          // 通話の場合は通話ページへリダイレクト
+          if (action === 'call') {
+            setTimeout(() => router.push(`/reception/call/${visitId}`), 1000)
+          }
         } else {
-          setError('訪問情報が見つかりません')
+          setStatus('error')
+          setErrorMsg(data.error || '処理に失敗しました')
         }
       } catch {
-        setError('通信エラーが発生しました')
-      } finally {
-        setLoading(false)
+        setStatus('error')
+        setErrorMsg('通信エラーが発生しました')
       }
     }
-    fetchVisitInfo()
-  }, [visitId])
 
-  const handleConfirm = async () => {
-    setSubmitting(true)
-    try {
-      const res = await fetch('/api/reception/respond', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ visitId, action }),
-      })
-      const data = await res.json()
-      if (data.success) {
-        setSubmitted(true)
-        if (action === 'call') {
-          setTimeout(() => router.push(`/reception/call/${visitId}`), 1200)
-        }
-      } else {
-        setError(data.error || '処理に失敗しました')
-      }
-    } catch {
-      setError('通信エラーが発生しました')
-    } finally {
-      setSubmitting(false)
-    }
-  }
-
-  if (loading) {
-    return (
-      <div style={{ width: '100%', maxWidth: '480px', margin: '0 auto', padding: '24px' }}>
-        <div style={glassCard}>
-          <div style={{ fontSize: '40px', marginBottom: '16px' }}>⏳</div>
-          <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '16px', margin: 0 }}>読み込み中...</p>
-        </div>
-      </div>
-    )
-  }
-
-  if (submitted) {
-    return (
-      <div style={{ width: '100%', maxWidth: '480px', margin: '0 auto', padding: '24px' }}>
-        <div style={glassCard}>
-          <div style={{
-            width: '80px', height: '80px', borderRadius: '50%',
-            background: `${config.color}33`, margin: '0 auto 20px',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: '40px',
-          }}>
-            ✅
-          </div>
-          <h2 style={{ fontSize: '24px', fontWeight: '700', color: config.color, margin: '0 0 8px' }}>
-            送信しました
-          </h2>
-          <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '14px', margin: 0 }}>
-            {action === 'call' ? '通話ページに移動します...' : '来訪者に通知されました'}
-          </p>
-        </div>
-      </div>
-    )
-  }
+    sendResponse()
+  }, [visitId, action, router])
 
   return (
     <div style={{ width: '100%', maxWidth: '480px', margin: '0 auto', padding: '24px' }}>
       <div style={glassCard}>
-        {/* Icon */}
+        {/* アイコン */}
         <div style={{
           width: '80px', height: '80px', borderRadius: '50%',
-          background: `${config.color}33`, margin: '0 auto 20px',
+          background: status === 'error' ? 'rgba(239,68,68,0.2)' : `${config.color}33`,
+          margin: '0 auto 20px',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           fontSize: '40px',
         }}>
-          {config.icon}
+          {status === 'sending' ? '⏳' : status === 'error' ? '❌' : '✅'}
         </div>
 
-        <h2 style={{ fontSize: '24px', fontWeight: '700', color: 'white', margin: '0 0 8px' }}>
-          来訪者対応
-        </h2>
-        <p style={{ color: config.color, fontSize: '18px', fontWeight: '600', margin: '0 0 28px' }}>
-          「{config.label}」で対応
-        </p>
-
-        {error && (
-          <p style={{ color: '#fca5a5', fontSize: '14px', margin: '0 0 20px' }}>{error}</p>
+        {/* ステータス表示 */}
+        {status === 'sending' && (
+          <>
+            <h2 style={{ fontSize: '22px', fontWeight: '700', color: 'white', margin: '0 0 8px' }}>
+              送信中...
+            </h2>
+            <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '14px', margin: 0 }}>
+              「{config.label}」を送信しています
+            </p>
+          </>
         )}
 
-        {/* Visit info */}
-        {info && (
-          <div style={{
-            background: 'rgba(255,255,255,0.06)', borderRadius: '16px',
-            padding: '16px 20px', marginBottom: '28px', textAlign: 'left',
-          }}>
-            {[
-              { label: 'お名前', value: `${info.visitorName}様` },
-              ...(info.visitorCompany ? [{ label: '会社名', value: info.visitorCompany }] : []),
-              { label: '用件', value: info.purpose },
-            ].map((item) => (
-              <div key={item.label} style={{
-                display: 'flex', justifyContent: 'space-between',
-                padding: '10px 0',
-                borderBottom: '1px solid rgba(255,255,255,0.06)',
-              }}>
-                <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '13px' }}>{item.label}</span>
-                <span style={{ color: 'white', fontWeight: '600', fontSize: '14px' }}>{item.value}</span>
-              </div>
-            ))}
-          </div>
+        {status === 'done' && (
+          <>
+            <h2 style={{ fontSize: '22px', fontWeight: '700', color: config.color, margin: '0 0 8px' }}>
+              {config.label}
+            </h2>
+            <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '14px', margin: 0 }}>
+              {action === 'call' ? '通話ページに移動します...' : '来訪者に通知されました'}
+            </p>
+          </>
         )}
 
-        {/* Buttons */}
-        <div style={{ display: 'flex', gap: '12px' }}>
-          <button
-            onClick={() => window.close()}
-            style={{
-              flex: 1, padding: '16px', borderRadius: '14px',
-              border: '1px solid rgba(255,255,255,0.15)', background: 'rgba(255,255,255,0.06)',
-              color: 'rgba(255,255,255,0.7)', fontSize: '15px', fontWeight: '600',
-              cursor: 'pointer',
-            }}
-          >
-            閉じる
-          </button>
-          <button
-            onClick={handleConfirm}
-            disabled={submitting || !!error}
-            style={{
-              flex: 2, padding: '16px', borderRadius: '14px',
-              border: 'none', background: 'white', color: '#0f172a',
-              fontSize: '15px', fontWeight: '700', cursor: submitting ? 'default' : 'pointer',
-              opacity: submitting || error ? 0.6 : 1,
-              boxShadow: '0 4px 16px rgba(255,255,255,0.15)',
-            }}
-          >
-            {submitting ? '処理中...' : `${config.label}`}
-          </button>
-        </div>
+        {status === 'error' && (
+          <>
+            <h2 style={{ fontSize: '22px', fontWeight: '700', color: '#ef4444', margin: '0 0 8px' }}>
+              エラー
+            </h2>
+            <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '14px', margin: '0 0 20px' }}>
+              {errorMsg}
+            </p>
+            <button
+              onClick={() => { hasSent.current = false; setStatus('sending'); window.location.reload() }}
+              style={{
+                padding: '12px 32px', borderRadius: '14px',
+                border: 'none', background: 'white', color: '#0f172a',
+                fontSize: '15px', fontWeight: '700', cursor: 'pointer',
+              }}
+            >
+              再試行
+            </button>
+          </>
+        )}
       </div>
     </div>
   )
