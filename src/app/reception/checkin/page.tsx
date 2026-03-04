@@ -64,6 +64,7 @@ export default function CheckInPage() {
   const [deliveryDone, setDeliveryDone] = useState(false)
 
   const isDeliveryFlow = purpose === 'delivery'
+  const isInterviewFlow = purpose === 'interview'
 
   useEffect(() => {
     fetch('/api/reception/employees')
@@ -106,7 +107,11 @@ export default function CheckInPage() {
         handleDeliverySubmit()
       } else {
         if (!visitorName.trim()) { setError('お名前を入力してください'); return }
-        setCurrentStep(3)
+        if (isInterviewFlow) {
+          setCurrentStep(4) // 面接は担当者選択スキップ
+        } else {
+          setCurrentStep(3)
+        }
       }
     } else if (currentStep === 3) {
       if (!selectedEmployee) { setError('担当者を選択してください'); return }
@@ -121,7 +126,7 @@ export default function CheckInPage() {
     if (currentStep === 1) router.push('/reception')
     else if (currentStep === 2) setCurrentStep(1)
     else if (currentStep === 3) setCurrentStep(2)
-    else if (currentStep === 4) setCurrentStep(3)
+    else if (currentStep === 4) setCurrentStep(isInterviewFlow ? 2 : 3)
   }
 
   const handleDeliverySubmit = async () => {
@@ -143,7 +148,7 @@ export default function CheckInPage() {
     try {
       const res = await fetch('/api/reception/checkin', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ visitorName, visitorCompany, purpose, employeeId: selectedEmployee?.id === '__other__' ? null : selectedEmployee?.id }),
+        body: JSON.stringify({ visitorName, visitorCompany, purpose, employeeId: isInterviewFlow ? null : (selectedEmployee?.id === '__other__' ? null : selectedEmployee?.id) }),
       })
       const data = await res.json()
       if (data.success) router.push(`/reception/waiting/${data.appointmentId}`)
@@ -153,9 +158,10 @@ export default function CheckInPage() {
   }
 
   const getPurposeLabel = (id: string | null) => PURPOSES.find(p => p.id === id)?.label || ''
-  const getStepCount = () => isDeliveryFlow ? 2 : 4
+  const getStepCount = () => isDeliveryFlow ? 2 : isInterviewFlow ? 3 : 4
   const getDisplayStep = () => {
     if (currentStep === 'delivery_complete') return 2
+    if (isInterviewFlow && currentStep === 4) return 3
     return typeof currentStep === 'number' ? currentStep : 1
   }
 
@@ -439,7 +445,7 @@ export default function CheckInPage() {
                 { label: 'お名前', value: `${visitorName}様` },
                 ...(purpose === 'meeting' && visitorCompany ? [{ label: '会社名', value: visitorCompany }] : []),
                 { label: '用件', value: getPurposeLabel(purpose) },
-                { label: '担当者', value: selectedEmployee?.name || '' },
+                ...(!isInterviewFlow ? [{ label: '担当者', value: selectedEmployee?.name || '' }] : []),
               ].map((item, i, arr) => (
                 <div key={item.label} style={{
                   display: 'flex', justifyContent: 'space-between', alignItems: 'center',
