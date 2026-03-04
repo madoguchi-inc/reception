@@ -25,15 +25,10 @@ export async function GET(
       })
 
       if (!visit) {
-        // Try demo fallback
-        return NextResponse.json({
-          success: true,
-          appointment: {
-            visitorName: 'ゲスト',
-            status: 'CHECKED_IN',
-            response: null,
-          },
-        })
+        return NextResponse.json(
+          { success: false, error: 'Visit not found' },
+          { status: 404 }
+        )
       }
 
       const res = NextResponse.json({
@@ -57,14 +52,10 @@ export async function GET(
       return res
     } catch (dbError) {
       console.error('DB error:', dbError)
-      return NextResponse.json({
-        success: true,
-        appointment: {
-          visitorName: 'ゲスト',
-          status: 'CHECKED_IN',
-          response: null,
-        },
-      })
+      return NextResponse.json(
+        { success: false, error: 'Database connection error' },
+        { status: 500 }
+      )
     }
   } catch (error) {
     console.error('Status error:', error)

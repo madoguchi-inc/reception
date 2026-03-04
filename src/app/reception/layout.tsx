@@ -16,9 +16,14 @@ export default function ReceptionLayout({ children }: { children: React.ReactNod
   }, [])
 
   // Idle detection - return to home after 60s
+  // ただし待機画面(/reception/waiting/*)と応答画面(/reception/respond/*)は除外
   useEffect(() => {
     const checkIdle = setInterval(() => {
-      if (Date.now() - lastActivity > 60000 && pathname !== '/reception') {
+      const isExempt = pathname.startsWith('/reception/waiting') ||
+                       pathname.startsWith('/reception/respond') ||
+                       pathname.startsWith('/reception/call') ||
+                       pathname === '/reception'
+      if (Date.now() - lastActivity > 60000 && !isExempt) {
         router.push('/reception')
       }
     }, 5000)
