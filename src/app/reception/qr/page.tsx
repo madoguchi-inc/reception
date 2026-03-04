@@ -29,7 +29,7 @@ export default function QRScanPage() {
         scannerRef.current = scanner
 
         await scanner.start(
-          { facingMode: 'environment' },
+          { facingMode: 'user' },
           { fps: 10, qrbox: { width: 250, height: 250 } },
           async (decodedText: string) => {
             await scanner.stop()
@@ -48,7 +48,7 @@ export default function QRScanPage() {
                 setError(data.error || 'QRコードが無効です')
                 setTimeout(() => {
                   scanner?.start(
-                    { facingMode: 'environment' },
+                    { facingMode: 'user' },
                     { fps: 10, qrbox: { width: 250, height: 250 } },
                     () => {}, () => {}
                   )
@@ -58,7 +58,7 @@ export default function QRScanPage() {
               setError('通信エラーが発生しました')
               setTimeout(() => {
                 scanner?.start(
-                  { facingMode: 'environment' },
+                  { facingMode: 'user' },
                   { fps: 10, qrbox: { width: 250, height: 250 } },
                   () => {}, () => {}
                 )
@@ -88,7 +88,7 @@ export default function QRScanPage() {
     if (scannerRef.current) {
       try {
         await scannerRef.current.start(
-          { facingMode: 'environment' },
+          { facingMode: 'user' },
           { fps: 10, qrbox: { width: 250, height: 250 } },
           () => {}, () => {}
         )
