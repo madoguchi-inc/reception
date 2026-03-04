@@ -137,13 +137,14 @@ export default function CheckInPage() {
 
   const handleDeliverySubmit = async () => {
     setLoading(true); setError(null)
+    playSuccessSound() // iOS: fetch前にユーザージェスチャー中に再生
     try {
       const res = await fetch('/api/reception/delivery', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ carrier: selectedCarrier }),
       })
       const data = await res.json()
-      if (data.success) { playSuccessSound(); setDeliveryDone(true) }
+      if (data.success) { setDeliveryDone(true) }
       else setError(data.error || '受付に失敗しました')
     } catch { setError('通信エラーが発生しました') }
     finally { setLoading(false) }
@@ -151,13 +152,14 @@ export default function CheckInPage() {
 
   const handleSubmit = async () => {
     setLoading(true); setError(null)
+    playSuccessSound() // iOS: fetch前にユーザージェスチャー中に再生
     try {
       const res = await fetch('/api/reception/checkin', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ visitorName, visitorCompany, purpose, employeeId: isInterviewFlow ? null : (selectedEmployee?.id === '__other__' ? null : selectedEmployee?.id) }),
       })
       const data = await res.json()
-      if (data.success) { playSuccessSound(); router.push(`/reception/waiting/${data.appointmentId}`) }
+      if (data.success) { router.push(`/reception/waiting/${data.appointmentId}`) }
       else setError(data.error || '受付に失敗しました')
     } catch { setError('通信エラーが発生しました') }
     finally { setLoading(false) }

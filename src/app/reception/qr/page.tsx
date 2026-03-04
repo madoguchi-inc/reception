@@ -35,6 +35,7 @@ export default function QRScanPage() {
           async (decodedText: string) => {
             await scanner.stop()
             setScanning(false)
+            playSuccessSound() // iOS: fetch前にユーザージェスチャー中に再生
 
             try {
               const res = await fetch('/api/reception/qr-checkin', {
@@ -44,7 +45,6 @@ export default function QRScanPage() {
               })
               const data = await res.json()
               if (data.success) {
-                playSuccessSound()
                 router.push(`/reception/waiting/${data.appointmentId}`)
               } else {
                 setError(data.error || 'QRコードが無効です')
