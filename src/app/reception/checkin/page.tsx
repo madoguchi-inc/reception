@@ -9,17 +9,17 @@ interface Employee {
 }
 
 const PURPOSES = [
-  { id: 'meeting', label: '打ち合わせ', icon: '📋' },
-  { id: 'interview', label: '面接', icon: '👔' },
-  { id: 'delivery', label: '配達', icon: '📦' },
-  { id: 'other', label: 'その他', icon: '❓' },
+  { id: 'meeting', label: '打ち合わせ' },
+  { id: 'interview', label: '面接' },
+  { id: 'delivery', label: '配達' },
+  { id: 'other', label: 'その他' },
 ]
 
 const CARRIERS = [
-  { id: 'yamato', label: 'ヤマト運輸', icon: '🐈‍⬛' },
-  { id: 'sagawa', label: '佐川急便', icon: '🚛' },
-  { id: 'japanpost', label: '日本郵便', icon: '📮' },
-  { id: 'other_delivery', label: 'その他', icon: '📋' },
+  { id: 'yamato', label: 'ヤマト運輸' },
+  { id: 'sagawa', label: '佐川急便' },
+  { id: 'japanpost', label: '日本郵便' },
+  { id: 'other_delivery', label: 'その他' },
 ]
 
 type StepType = 1 | 2 | 3 | 4 | 'delivery_complete'
@@ -87,6 +87,13 @@ export default function CheckInPage() {
     const matchesDept = !selectedDepartment || emp.department === selectedDepartment
     return matchesSearch && matchesDept
   })
+
+  // 用件選択時に自動的に次のステップへ
+  const selectPurpose = (id: string) => {
+    setPurpose(id)
+    setError(null)
+    setCurrentStep(2)
+  }
 
   const handleNext = () => {
     setError(null)
@@ -252,14 +259,13 @@ export default function CheckInPage() {
             </p>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
               {PURPOSES.map(p => (
-                <button key={p.id} onClick={() => setPurpose(p.id)} style={{
-                  padding: '20px', borderRadius: '16px', border: 'none', cursor: 'pointer',
-                  textAlign: 'left', transition: 'all 0.2s',
-                  background: purpose === p.id ? 'rgba(59,130,246,0.3)' : 'rgba(255,255,255,0.08)',
-                  outline: purpose === p.id ? '2px solid rgba(59,130,246,0.6)' : '1px solid rgba(255,255,255,0.12)',
+                <button key={p.id} onClick={() => selectPurpose(p.id)} style={{
+                  padding: '24px 20px', borderRadius: '16px', border: 'none', cursor: 'pointer',
+                  textAlign: 'center', transition: 'all 0.2s',
+                  background: 'rgba(255,255,255,0.08)',
+                  outline: '1px solid rgba(255,255,255,0.12)',
                 }}>
-                  <div style={{ fontSize: '28px', marginBottom: '8px' }}>{p.icon}</div>
-                  <p style={{ fontSize: '16px', fontWeight: '700', color: 'white', margin: 0 }}>{p.label}</p>
+                  <p style={{ fontSize: '18px', fontWeight: '700', color: 'white', margin: 0 }}>{p.label}</p>
                 </button>
               ))}
             </div>
@@ -277,13 +283,12 @@ export default function CheckInPage() {
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
               {CARRIERS.map(c => (
                 <button key={c.id} onClick={() => setSelectedCarrier(c.id)} style={{
-                  padding: '20px', borderRadius: '16px', border: 'none', cursor: 'pointer',
-                  textAlign: 'left', transition: 'all 0.2s',
+                  padding: '24px 20px', borderRadius: '16px', border: 'none', cursor: 'pointer',
+                  textAlign: 'center', transition: 'all 0.2s',
                   background: selectedCarrier === c.id ? 'rgba(59,130,246,0.3)' : 'rgba(255,255,255,0.08)',
                   outline: selectedCarrier === c.id ? '2px solid rgba(59,130,246,0.6)' : '1px solid rgba(255,255,255,0.12)',
                 }}>
-                  <div style={{ fontSize: '28px', marginBottom: '8px' }}>{c.icon}</div>
-                  <p style={{ fontSize: '16px', fontWeight: '700', color: 'white', margin: 0 }}>{c.label}</p>
+                  <p style={{ fontSize: '18px', fontWeight: '700', color: 'white', margin: 0 }}>{c.label}</p>
                 </button>
               ))}
             </div>
@@ -362,7 +367,7 @@ export default function CheckInPage() {
             {/* Employee grid */}
             <div style={{
               display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px',
-              maxHeight: '320px', overflowY: 'auto',
+              maxHeight: '200px', overflowY: 'auto',
               paddingRight: '4px',
             }}>
               {filteredEmployees.length > 0 ? (
@@ -432,28 +437,30 @@ export default function CheckInPage() {
           </div>
         )}
 
-        {/* Navigation buttons */}
-        <div style={{ display: 'flex', gap: '12px', marginTop: '32px' }}>
-          <button onClick={handleBack} disabled={loading} style={{
-            flex: 1, padding: '16px', borderRadius: '14px',
-            border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(255,255,255,0.06)',
-            color: 'rgba(255,255,255,0.7)', fontSize: '16px', fontWeight: '600',
-            cursor: loading ? 'default' : 'pointer', opacity: loading ? 0.5 : 1,
-            transition: 'all 0.2s',
-          }}>
-            戻る
-          </button>
-          <button onClick={handleNext} disabled={loading} style={{
-            flex: 1, padding: '16px', borderRadius: '14px',
-            border: 'none', background: 'white', color: '#0f172a',
-            fontSize: '16px', fontWeight: '700', cursor: loading ? 'default' : 'pointer',
-            opacity: loading ? 0.7 : 1, transition: 'all 0.2s',
-            boxShadow: '0 4px 16px rgba(255,255,255,0.15)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
-          }}>
-            {loading ? '処理中...' : currentStep === 4 ? '受付完了' : '次へ →'}
-          </button>
-        </div>
+        {/* Navigation buttons (Step 1は自動遷移のため非表示) */}
+        {currentStep !== 1 && (
+          <div style={{ display: 'flex', gap: '12px', marginTop: '32px' }}>
+            <button onClick={handleBack} disabled={loading} style={{
+              flex: 1, padding: '16px', borderRadius: '14px',
+              border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(255,255,255,0.06)',
+              color: 'rgba(255,255,255,0.7)', fontSize: '16px', fontWeight: '600',
+              cursor: loading ? 'default' : 'pointer', opacity: loading ? 0.5 : 1,
+              transition: 'all 0.2s',
+            }}>
+              戻る
+            </button>
+            <button onClick={handleNext} disabled={loading} style={{
+              flex: 1, padding: '16px', borderRadius: '14px',
+              border: 'none', background: 'white', color: '#0f172a',
+              fontSize: '16px', fontWeight: '700', cursor: loading ? 'default' : 'pointer',
+              opacity: loading ? 0.7 : 1, transition: 'all 0.2s',
+              boxShadow: '0 4px 16px rgba(255,255,255,0.15)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
+            }}>
+              {loading ? '処理中...' : currentStep === 4 ? '受付完了' : '次へ →'}
+            </button>
+          </div>
+        )}
       </div>
     </div>
   )
