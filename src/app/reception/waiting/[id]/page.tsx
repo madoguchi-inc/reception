@@ -169,11 +169,14 @@ export default function WaitingPage() {
     return () => clearTimeout(timeout)
   }, [router, callActive])
 
-  // 「向かう」応答後の自動トップ遷移（10秒）
+  // 応答後の自動トップ遷移（向かう:10秒、少々お待ちください:30秒）
   const [returnCountdown, setReturnCountdown] = useState<number | null>(null)
   useEffect(() => {
-    if (info?.response === 'on_my_way' && returnCountdown === null) {
+    if (returnCountdown !== null) return
+    if (info?.response === 'on_my_way') {
       setReturnCountdown(10)
+    } else if (info?.response === 'please_wait') {
+      setReturnCountdown(30)
     }
   }, [info?.response, returnCountdown])
 
@@ -294,7 +297,7 @@ export default function WaitingPage() {
             <h2 style={{ fontSize: '28px', fontWeight: '700', color: '#4ade80', margin: '0 0 8px' }}>
               {responseMessage}
             </h2>
-            {info?.response === 'on_my_way' && returnCountdown !== null && (
+            {returnCountdown !== null && (
               <>
                 <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '13px', margin: '16px 0 0' }}>
                   {returnCountdown}秒後にトップページに戻ります
