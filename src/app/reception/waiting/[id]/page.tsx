@@ -169,6 +169,24 @@ export default function WaitingPage() {
     return () => clearTimeout(timeout)
   }, [router, callActive])
 
+  // 「向かう」応答後の自動トップ遷移（10秒）
+  const [returnCountdown, setReturnCountdown] = useState<number | null>(null)
+  useEffect(() => {
+    if (info?.response === 'on_my_way' && returnCountdown === null) {
+      setReturnCountdown(10)
+    }
+  }, [info?.response, returnCountdown])
+
+  useEffect(() => {
+    if (returnCountdown === null || returnCountdown < 0) return
+    if (returnCountdown === 0) {
+      router.push('/reception')
+      return
+    }
+    const t = setTimeout(() => setReturnCountdown(c => (c !== null ? c - 1 : null)), 1000)
+    return () => clearTimeout(t)
+  }, [returnCountdown, router])
+
   const responseMessage = info?.response === 'on_my_way'
     ? '担当者が向かっております'
     : info?.response === 'please_wait'
@@ -276,6 +294,24 @@ export default function WaitingPage() {
             <h2 style={{ fontSize: '28px', fontWeight: '700', color: '#4ade80', margin: '0 0 8px' }}>
               {responseMessage}
             </h2>
+            {info?.response === 'on_my_way' && returnCountdown !== null && (
+              <>
+                <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '13px', margin: '16px 0 0' }}>
+                  {returnCountdown}秒後にトップページに戻ります
+                </p>
+                <button
+                  onClick={() => router.push('/reception')}
+                  style={{
+                    marginTop: '16px', padding: '14px 32px', borderRadius: '14px',
+                    border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(255,255,255,0.06)',
+                    color: 'rgba(255,255,255,0.7)', fontSize: '15px', fontWeight: '600',
+                    cursor: 'pointer', transition: 'all 0.2s',
+                  }}
+                >
+                  トップに戻る
+                </button>
+              </>
+            )}
           </>
         ) : (
           <>
