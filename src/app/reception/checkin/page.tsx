@@ -143,7 +143,7 @@ export default function CheckInPage() {
     try {
       const res = await fetch('/api/reception/checkin', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ visitorName, visitorCompany, purpose, employeeId: selectedEmployee?.id }),
+        body: JSON.stringify({ visitorName, visitorCompany, purpose, employeeId: selectedEmployee?.id === '__other__' ? null : selectedEmployee?.id }),
       })
       const data = await res.json()
       if (data.success) router.push(`/reception/waiting/${data.appointmentId}`)
@@ -402,6 +402,16 @@ export default function CheckInPage() {
                   該当する担当者が見つかりません
                 </div>
               )}
+              {/* その他 */}
+              <button onClick={() => setSelectedEmployee({ id: '__other__', name: 'その他', department: '' })} style={{
+                gridColumn: '1 / -1',
+                padding: '14px', borderRadius: '14px', border: 'none', cursor: 'pointer',
+                textAlign: 'center', transition: 'all 0.2s',
+                background: selectedEmployee?.id === '__other__' ? 'rgba(59,130,246,0.3)' : 'rgba(255,255,255,0.06)',
+                outline: selectedEmployee?.id === '__other__' ? '2px solid rgba(59,130,246,0.6)' : '1px solid rgba(255,255,255,0.1)',
+              }}>
+                <p style={{ fontWeight: '600', color: 'rgba(255,255,255,0.7)', margin: 0, fontSize: '14px' }}>その他（担当者不明）</p>
+              </button>
             </div>
             {error && <div style={{ marginTop: '16px', padding: '12px 16px', background: 'rgba(239,68,68,0.2)', borderRadius: '12px', color: '#fca5a5', fontSize: '14px', fontWeight: '500' }}>{error}</div>}
           </div>
