@@ -84,7 +84,7 @@ export default function CheckInPage() {
   const departments = Array.from(new Set(employees.map(e => e.department).filter(Boolean)))
   const filteredEmployees = employees.filter(emp => {
     const matchesSearch = emp.name.toLowerCase().includes(searchQuery.toLowerCase())
-    const matchesDept = !selectedDepartment || emp.department === selectedDepartment
+    const matchesDept = !selectedDepartment || (selectedDepartment === '__none__' ? !emp.department : emp.department === selectedDepartment)
     return matchesSearch && matchesDept
   })
 
@@ -364,6 +364,12 @@ export default function CheckInPage() {
                     color: selectedDepartment === dept ? '#0f172a' : 'rgba(255,255,255,0.7)',
                   }}>{dept}</button>
                 ))}
+                <button onClick={() => setSelectedDepartment('__none__')} style={{
+                  padding: '6px 16px', borderRadius: '20px', border: 'none', cursor: 'pointer',
+                  fontSize: '13px', fontWeight: '600', transition: 'all 0.2s',
+                  background: selectedDepartment === '__none__' ? 'white' : 'rgba(255,255,255,0.1)',
+                  color: selectedDepartment === '__none__' ? '#0f172a' : 'rgba(255,255,255,0.7)',
+                }}>その他</button>
               </div>
             )}
             {/* Employee grid */}
