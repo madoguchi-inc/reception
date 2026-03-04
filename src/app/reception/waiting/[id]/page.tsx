@@ -181,14 +181,14 @@ export default function WaitingPage() {
   }, [info?.response, returnCountdown])
 
   useEffect(() => {
-    if (returnCountdown === null || returnCountdown < 0) return
+    if (callActive || returnCountdown === null || returnCountdown < 0) return
     if (returnCountdown === 0) {
       router.push('/reception')
       return
     }
     const t = setTimeout(() => setReturnCountdown(c => (c !== null ? c - 1 : null)), 1000)
     return () => clearTimeout(t)
-  }, [returnCountdown, router])
+  }, [returnCountdown, router, callActive])
 
   const responseMessage = info?.response === 'on_my_way'
     ? '担当者が向かっております'
