@@ -36,20 +36,18 @@ export async function POST(request: NextRequest) {
       updateData.response = action
     }
 
-    try {
-      await prisma.visit.update({
-        where: { id: visitId },
-        data: updateData,
-      })
-    } catch (dbError) {
-      console.error('DB update error:', dbError)
-    }
+    // DB更新 - エラーは握り潰さずに返す
+    await prisma.visit.update({
+      where: { id: visitId },
+      data: updateData,
+    })
 
     return NextResponse.json({ success: true })
   } catch (error) {
     console.error('Respond error:', error)
+    const message = error instanceof Error ? error.message : '処理に失敗しました'
     return NextResponse.json(
-      { success: false, error: '処理に失敗しました' },
+      { success: false, error: message },
       { status: 500 }
     )
   }
