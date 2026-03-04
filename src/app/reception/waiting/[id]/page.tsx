@@ -125,6 +125,9 @@ export default function WaitingPage() {
       }
 
       await channel.subscribe()
+
+      // チャンネル参加完了を通知 → スタッフ側がOfferを再送信してくれる
+      channel.send({ type: 'broadcast', event: 'receiver-ready', payload: {} })
     } catch (err) {
       console.error('Call receiver error:', err)
       endCall()

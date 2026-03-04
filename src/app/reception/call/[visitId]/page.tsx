@@ -31,11 +31,14 @@ export default function CallPage() {
   const audioRef = useRef<HTMLAudioElement | null>(null)
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null)
   const timerRef = useRef<NodeJS.Timeout | null>(null)
+  const offerRetryRef = useRef<NodeJS.Timeout | null>(null)
+  const answerReceivedRef = useRef(false)
 
   const endCall = useCallback(async () => {
     if (status === 'ended') return
     setStatus('ended')
     if (timerRef.current) clearInterval(timerRef.current)
+    if (offerRetryRef.current) clearInterval(offerRetryRef.current)
     if (streamRef.current) streamRef.current.getTracks().forEach(t => t.stop())
     if (pcRef.current) pcRef.current.close()
     if (channelRef.current) channelRef.current.unsubscribe()
@@ -76,6 +79,7 @@ export default function CallPage() {
         pc.onconnectionstatechange = () => {
           if (pc.connectionState === 'connected') {
             setStatus('connected')
+            if (offerRetryRef.current) clearInterval(offerRetryRef.current)
             timerRef.current = setInterval(() => setDuration(d => d + 1), 1000)
           } else if (pc.connectionState === 'disconnected' || pc.connectionState === 'failed') {
             endCall()
@@ -88,6 +92,8 @@ export default function CallPage() {
 
         channel.on('broadcast', { event: 'answer' }, async ({ payload }) => {
           if (pc.signalingState === 'have-local-offer') {
+            answerReceivedRef.current = true
+            if (offerRetryRef.current) clearInterval(offerRetryRef.current)
             await pc.setRemoteDescription(new RTCSessionDescription(payload.answer))
           }
         })
@@ -98,6 +104,18 @@ export default function CallPage() {
 
         // 通話終了シグナル
         channel.on('broadcast', { event: 'end-call' }, () => { endCall() })
+
+        // 受信側が準備完了を通知してきたら、Offerを再送信
+        channel.on('broadcast', { event: 'receiver-ready' }, () => {
+          if (!answerReceivedRef.current && pc.localDescription) {
+            console.log('Receiver ready, resending offer')
+            channel.send({
+              type: 'broadcast',
+              event: 'offer',
+              payload: { offer: pc.localDescription },
+            })
+          }
+        })
 
         await channel.subscribe()
 
@@ -112,6 +130,29 @@ export default function CallPage() {
         const offer = await pc.createOffer()
         await pc.setLocalDescription(offer)
         channel.send({ type: 'broadcast', event: 'offer', payload: { offer } })
+
+        // 受信側がまだ参加していない可能性があるため、
+        // Answerが届くまで3秒ごとにOfferを再送信（最大30秒）
+        let retryCount = 0
+        const MAX_RETRIES = 10
+        offerRetryRef.current = setInterval(() => {
+          retryCount++
+          if (answerReceivedRef.current || retryCount >= MAX_RETRIES) {
+            if (offerRetryRef.current) clearInterval(offerRetryRef.current)
+            if (!answerReceivedRef.current && retryCount >= MAX_RETRIES) {
+              console.error('Call timeout: no answer received')
+              setStatus('error')
+              setErrorMsg('来訪者との接続がタイムアウトしました。\nもう一度お試しください。')
+            }
+            return
+          }
+          console.log(`Retrying offer (${retryCount}/${MAX_RETRIES})`)
+          channel.send({
+            type: 'broadcast',
+            event: 'offer',
+            payload: { offer: pc.localDescription },
+          })
+        }, 3000)
 
       } catch (err) {
         console.error('Call init error:', err)
