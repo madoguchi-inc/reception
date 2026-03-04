@@ -387,7 +387,7 @@ export default function CheckInPage() {
             {/* Employee grid */}
             <div style={{
               display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px',
-              maxHeight: '200px', overflowY: 'auto',
+              maxHeight: '150px', overflowY: 'auto',
               paddingRight: '4px',
             }}>
               {filteredEmployees.length > 0 ? (
@@ -420,17 +420,17 @@ export default function CheckInPage() {
                   該当する担当者が見つかりません
                 </div>
               )}
-              {/* その他 */}
-              <button onClick={() => setSelectedEmployee({ id: '__other__', name: 'その他', department: '' })} style={{
-                gridColumn: '1 / -1',
-                padding: '14px', borderRadius: '14px', border: 'none', cursor: 'pointer',
-                textAlign: 'center', transition: 'all 0.2s',
-                background: selectedEmployee?.id === '__other__' ? 'rgba(59,130,246,0.3)' : 'rgba(255,255,255,0.06)',
-                outline: selectedEmployee?.id === '__other__' ? '2px solid rgba(59,130,246,0.6)' : '1px solid rgba(255,255,255,0.1)',
-              }}>
-                <p style={{ fontWeight: '600', color: 'rgba(255,255,255,0.7)', margin: 0, fontSize: '14px' }}>その他（担当者不明）</p>
-              </button>
             </div>
+            {/* その他 */}
+            <button onClick={() => setSelectedEmployee({ id: '__other__', name: 'その他', department: '' })} style={{
+              width: '100%', marginTop: '10px',
+              padding: '14px', borderRadius: '14px', border: 'none', cursor: 'pointer',
+              textAlign: 'center', transition: 'all 0.2s',
+              background: selectedEmployee?.id === '__other__' ? 'rgba(59,130,246,0.3)' : 'rgba(255,255,255,0.06)',
+              outline: selectedEmployee?.id === '__other__' ? '2px solid rgba(59,130,246,0.6)' : '1px solid rgba(255,255,255,0.1)',
+            }}>
+              <p style={{ fontWeight: '600', color: 'rgba(255,255,255,0.7)', margin: 0, fontSize: '14px' }}>その他（担当者不明）</p>
+            </button>
             {error && <div style={{ marginTop: '16px', padding: '12px 16px', background: 'rgba(239,68,68,0.2)', borderRadius: '12px', color: '#fca5a5', fontSize: '14px', fontWeight: '500' }}>{error}</div>}
           </div>
         )}
