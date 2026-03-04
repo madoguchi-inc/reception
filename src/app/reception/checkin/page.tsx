@@ -299,11 +299,14 @@ export default function CheckInPage() {
         {/* Step 2: Visitor Info */}
         {currentStep === 2 && !isDeliveryFlow && (
           <div>
-            <h2 style={{ fontSize: '28px', fontWeight: '700', color: 'white', margin: '0 0 8px' }}>お名前</h2>
+            <h2 style={{ fontSize: '28px', fontWeight: '700', color: 'white', margin: '0 0 8px' }}>基本情報</h2>
             <p style={{ color: 'rgba(255,255,255,0.6)', margin: '0 0 28px', fontSize: '15px' }}>
-              お名前を入力してください
+              {purpose === 'meeting' ? '来訪者情報を入力してください' : 'お名前を入力してください'}
             </p>
-            <div style={{ marginBottom: '8px' }}>
+            <div style={{ marginBottom: purpose === 'meeting' ? '20px' : '8px' }}>
+              <label style={{ display: 'block', fontSize: '15px', fontWeight: '600', color: 'rgba(255,255,255,0.8)', marginBottom: '8px' }}>
+                お名前 <span style={{ color: '#f87171' }}>*</span>
+              </label>
               <input
                 type="text" value={visitorName}
                 onChange={e => setVisitorName(e.target.value)}
@@ -311,6 +314,19 @@ export default function CheckInPage() {
                 style={inputStyle}
               />
             </div>
+            {purpose === 'meeting' && (
+              <div style={{ marginBottom: '8px' }}>
+                <label style={{ display: 'block', fontSize: '15px', fontWeight: '600', color: 'rgba(255,255,255,0.8)', marginBottom: '8px' }}>
+                  会社名 <span style={{ color: 'rgba(255,255,255,0.4)', fontWeight: '400' }}>(任意)</span>
+                </label>
+                <input
+                  type="text" value={visitorCompany}
+                  onChange={e => setVisitorCompany(e.target.value)}
+                  placeholder="株式会社 〇〇〇"
+                  style={inputStyle}
+                />
+              </div>
+            )}
             {error && <div style={{ marginTop: '16px', padding: '12px 16px', background: 'rgba(239,68,68,0.2)', borderRadius: '12px', color: '#fca5a5', fontSize: '14px', fontWeight: '500' }}>{error}</div>}
           </div>
         )}
@@ -405,6 +421,7 @@ export default function CheckInPage() {
             }}>
               {[
                 { label: 'お名前', value: `${visitorName}様` },
+                ...(purpose === 'meeting' && visitorCompany ? [{ label: '会社名', value: visitorCompany }] : []),
                 { label: '用件', value: getPurposeLabel(purpose) },
                 { label: '担当者', value: selectedEmployee?.name || '' },
               ].map((item, i, arr) => (
