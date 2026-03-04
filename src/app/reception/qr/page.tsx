@@ -1,6 +1,7 @@
 'use client'
 import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
+import { playSuccessSound } from '@/lib/sound'
 
 const glassCard: React.CSSProperties = {
   background: 'rgba(255,255,255,0.12)',
@@ -43,6 +44,7 @@ export default function QRScanPage() {
               })
               const data = await res.json()
               if (data.success) {
+                playSuccessSound()
                 router.push(`/reception/waiting/${data.appointmentId}`)
               } else {
                 setError(data.error || 'QRコードが無効です')

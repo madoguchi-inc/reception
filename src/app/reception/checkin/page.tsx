@@ -1,6 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import { playSuccessSound } from '@/lib/sound'
 
 interface Employee {
   id: string
@@ -137,7 +138,7 @@ export default function CheckInPage() {
         body: JSON.stringify({ carrier: selectedCarrier }),
       })
       const data = await res.json()
-      if (data.success) setDeliveryDone(true)
+      if (data.success) { playSuccessSound(); setDeliveryDone(true) }
       else setError(data.error || '受付に失敗しました')
     } catch { setError('通信エラーが発生しました') }
     finally { setLoading(false) }
@@ -151,7 +152,7 @@ export default function CheckInPage() {
         body: JSON.stringify({ visitorName, visitorCompany, purpose, employeeId: isInterviewFlow ? null : (selectedEmployee?.id === '__other__' ? null : selectedEmployee?.id) }),
       })
       const data = await res.json()
-      if (data.success) router.push(`/reception/waiting/${data.appointmentId}`)
+      if (data.success) { playSuccessSound(); router.push(`/reception/waiting/${data.appointmentId}`) }
       else setError(data.error || '受付に失敗しました')
     } catch { setError('通信エラーが発生しました') }
     finally { setLoading(false) }
