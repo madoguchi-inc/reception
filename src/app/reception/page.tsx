@@ -1,9 +1,16 @@
 'use client'
+import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
+import { initAudioOnInteraction } from '@/lib/sound'
 
 export default function ReceptionHome() {
   const router = useRouter()
+
+  // iOS Safari 対策: 最初のタップで AudioContext を初期化
+  useEffect(() => {
+    initAudioOnInteraction()
+  }, [])
 
   return (
     <div style={{

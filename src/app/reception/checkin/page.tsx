@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { playSuccessSound } from '@/lib/sound'
+import { playSuccessSound, initAudioOnInteraction } from '@/lib/sound'
 
 interface Employee {
   id: string
@@ -66,6 +66,11 @@ export default function CheckInPage() {
 
   const isDeliveryFlow = purpose === 'delivery'
   const isInterviewFlow = purpose === 'interview'
+
+  // iOS Safari 対策: 最初のタップで AudioContext を初期化
+  useEffect(() => {
+    initAudioOnInteraction()
+  }, [])
 
   useEffect(() => {
     fetch('/api/reception/employees')
