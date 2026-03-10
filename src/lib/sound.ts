@@ -43,44 +43,40 @@ export function initAudioOnInteraction() {
   document.addEventListener('click', handler, { once: false })
 }
 
-/** 受付完了チャイム — やわらかい3音の上昇チャイム */
+/** 受付完了チャイム — ANA国際線風の洗練された上昇3音チャイム */
 export function playSuccessSound() {
   try {
     const ctx = getAudioContext()
     const now = ctx.currentTime
 
-    // 3音の上昇チャイム (E5 → G#5 → B5) でメジャーコード感
-    const notes = [
-      { freq: 659.25, start: 0, duration: 0.25 },     // E5
-      { freq: 830.61, start: 0.12, duration: 0.25 },   // G#5
-      { freq: 987.77, start: 0.24, duration: 0.45 },   // B5（最後は長め）
-    ]
-
-    notes.forEach(({ freq, start, duration }) => {
-      // メインの音（triangle = 丸みのあるやわらかい音）
+    function playNote(freq: number, start: number, duration: number, type: OscillatorType, vol: number) {
       const osc = ctx.createOscillator()
       const gain = ctx.createGain()
-      osc.type = 'triangle'
+      osc.type = type
       osc.frequency.value = freq
-      gain.gain.setValueAtTime(0.35, now + start)
-      gain.gain.exponentialRampToValueAtTime(0.01, now + start + duration)
+      gain.gain.setValueAtTime(vol, now + start)
+      gain.gain.exponentialRampToValueAtTime(0.001, now + start + duration)
       osc.connect(gain)
       gain.connect(ctx.destination)
       osc.start(now + start)
       osc.stop(now + start + duration + 0.05)
+    }
 
-      // 倍音を軽く加えて厚みを出す（1オクターブ上を小さく重ねる）
-      const osc2 = ctx.createOscillator()
-      const gain2 = ctx.createGain()
-      osc2.type = 'sine'
-      osc2.frequency.value = freq * 2
-      gain2.gain.setValueAtTime(0.08, now + start)
-      gain2.gain.exponentialRampToValueAtTime(0.01, now + start + duration * 0.7)
-      osc2.connect(gain2)
-      gain2.connect(ctx.destination)
-      osc2.start(now + start)
-      osc2.stop(now + start + duration + 0.05)
-    })
+    // 1音目: B♭5
+    playNote(932.33, 0, 0.55, 'sine', 0.28)
+    playNote(1864.66, 0, 0.35, 'sine', 0.08)
+    playNote(932.33, 0, 0.3, 'triangle', 0.06)
+
+    // 2音目: D6（上昇）
+    playNote(1174.66, 0.45, 0.55, 'sine', 0.28)
+    playNote(2349.32, 0.45, 0.35, 'sine', 0.08)
+    playNote(1174.66, 0.45, 0.3, 'triangle', 0.06)
+
+    // 3音目: F6（さらに上昇、長い余韻）
+    playNote(1396.91, 0.9, 1.2, 'sine', 0.25)
+    playNote(2793.83, 0.9, 0.8, 'sine', 0.07)
+    playNote(1396.91, 0.9, 0.6, 'triangle', 0.05)
+    playNote(698.46, 0.9, 0.8, 'sine', 0.04)  // F5 低い支え
   } catch {
     // Audio API が使えない環境では無視
   }
