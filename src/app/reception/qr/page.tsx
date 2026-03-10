@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
-import { playSuccessSound } from '@/lib/sound'
+import { playSuccessSound, unlockAudio } from '@/lib/sound'
 
 const glassCard: React.CSSProperties = {
   background: 'rgba(255,255,255,0.12)',
@@ -35,7 +35,7 @@ export default function QRScanPage() {
           async (decodedText: string) => {
             await scanner.stop()
             setScanning(false)
-            playSuccessSound() // iOS: fetch前にユーザージェスチャー中に再生
+            unlockAudio() // iOS: AudioContextをアンロック
 
             try {
               const res = await fetch('/api/reception/qr-checkin', {
@@ -45,6 +45,7 @@ export default function QRScanPage() {
               })
               const data = await res.json()
               if (data.success) {
+                playSuccessSound() // 送信完了後に効果音
                 router.push(`/reception/waiting/${data.appointmentId}`)
               } else {
                 setError(data.error || 'QRコードが無効です')
